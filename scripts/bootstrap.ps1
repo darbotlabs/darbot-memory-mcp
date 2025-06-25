@@ -60,7 +60,7 @@ foreach ($tool in $tools) {
         Write-Host "✓ $tool installed/updated" -ForegroundColor Green
     }
     catch {
-        Write-Warning "Failed to install/update $tool: $_"
+        Write-Warning "Failed to install/update ${tool}: $($_.Exception.Message)"
     }
 }
 

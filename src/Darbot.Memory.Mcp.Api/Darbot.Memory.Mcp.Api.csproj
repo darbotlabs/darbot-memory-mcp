@@ -9,6 +9,13 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.16" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    <PackageReference Include="Serilog.AspNetCore" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Darbot.Memory.Mcp.Core/Darbot.Memory.Mcp.Core.csproj" />
+    <ProjectReference Include="../Darbot.Memory.Mcp.Storage/Darbot.Memory.Mcp.Storage.csproj" />
   </ItemGroup>
 
 </Project>
