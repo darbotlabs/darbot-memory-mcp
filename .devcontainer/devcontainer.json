@@ -1,0 +1,67 @@
+{
+    "name": "Darbot Memory MCP",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "devcontainer",
+    "workspaceFolder": "/workspace",
+    "shutdownAction": "stopCompose",
+    
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "installZsh": true,
+            "username": "vscode",
+            "userUid": "1000",
+            "userGid": "1000"
+        },
+        "ghcr.io/devcontainers/features/dotnet:2": {
+            "version": "8.0",
+            "installUsingApt": true
+        },
+        "ghcr.io/devcontainers/features/powershell:1": {
+            "version": "latest"
+        },
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {
+            "version": "latest",
+            "enableNonRootDocker": "true"
+        },
+        "ghcr.io/devcontainers/features/azure-cli:1": {
+            "version": "latest"
+        }
+    },
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-dotnettools.csharp",
+                "ms-dotnettools.vscode-dotnet-runtime",
+                "ms-vscode.powershell",
+                "ms-azuretools.vscode-docker",
+                "ms-azuretools.vscode-bicep",
+                "redhat.vscode-yaml",
+                "ms-kubernetes-tools.vscode-kubernetes-tools",
+                "github.copilot",
+                "github.copilot-chat"
+            ],
+            "settings": {
+                "dotnet.server.useOmnisharp": false,
+                "omnisharp.enableRoslynAnalyzers": true,
+                "omnisharp.enableEditorConfigSupport": true,
+                "files.exclude": {
+                    "**/bin": true,
+                    "**/obj": true
+                }
+            }
+        }
+    },
+
+    "forwardPorts": [5093, 5000, 8080],
+    "portsAttributes": {
+        "5093": {
+            "label": "Darbot Memory MCP API",
+            "onAutoForward": "notify"
+        }
+    },
+
+    "postCreateCommand": "pwsh ./scripts/bootstrap.ps1",
+
+    "remoteUser": "vscode"
+}

@@ -1,0 +1,121 @@
+# Default values for darbot-memory-mcp
+replicaCount: 1
+
+image:
+  repository: ghcr.io/darbotlabs/darbot-memory-mcp
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 1001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1001
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: darbot-memory-mcp.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: darbot-memory-mcp-tls
+  #    hosts:
+  #      - darbot-memory-mcp.local
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Darbot Memory MCP specific configuration
+config:
+  storage:
+    provider: "FileSystem"
+    fileSystem:
+      rootPath: "/data/conversations"
+  fileNameTemplate: "%utc%_%conversationId%_%turn%.md"
+  hashAlgorithm: "SHA256"
+  cors:
+    allowedOrigins: "*"
+  auth:
+    mode: "None"
+
+# Persistence for FileSystem storage
+persistence:
+  enabled: true
+  accessMode: ReadWriteOnce
+  size: 10Gi
+  # storageClass: ""
+
+# Health checks configuration
+healthCheck:
+  enabled: true
+  livenessProbe:
+    httpGet:
+      path: /health/live
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 30
+  readinessProbe:
+    httpGet:
+      path: /health/ready
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+# Environment variables
+env: []
+  # - name: DARBOT__STORAGE__AZUREBLOB__CONNECTIONSTRING
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: storage-secret
+  #       key: connection-string
+
+# Additional volumes
+extraVolumes: []
+
+# Additional volume mounts
+extraVolumeMounts: []

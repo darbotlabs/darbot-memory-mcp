@@ -20,6 +20,14 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
+    <PackageReference Include="Moq" Version="4.20.69" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Darbot.Memory.Mcp.Core/Darbot.Memory.Mcp.Core.csproj" />
+    <ProjectReference Include="../Darbot.Memory.Mcp.Storage/Darbot.Memory.Mcp.Storage.csproj" />
   </ItemGroup>
 
 </Project>
