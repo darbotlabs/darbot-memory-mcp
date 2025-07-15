@@ -1,9 +1,11 @@
+using Darbot.Memory.Mcp.Api.Authentication;
 using Darbot.Memory.Mcp.Core.Configuration;
 using Darbot.Memory.Mcp.Core.Interfaces;
 using Darbot.Memory.Mcp.Core.Models;
 using Darbot.Memory.Mcp.Core.Services;
 using Darbot.Memory.Mcp.Storage.Providers;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,6 +33,17 @@ builder.Services.AddSwaggerGen(c =>
 // Add health checks
 builder.Services.AddHealthChecks()
     .AddCheck<StorageHealthCheck>("storage");
+
+// Add authentication
+builder.Services.AddAuthentication(ApiKeyAuthenticationOptions.DefaultScheme)
+    .AddApiKey();
+
+// Add authorization
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("DarbotMemoryWriter", policy =>
+        policy.RequireClaim("scope", "darbot.memory.writer"));
+});
 
 // Add CORS
 var config = builder.Configuration.GetSection(DarbotConfiguration.SectionName).Get<DarbotConfiguration>() ?? new();
@@ -65,7 +78,22 @@ builder.Services.AddSingleton<IHashCalculator>(sp =>
     new HashCalculator(config.HashAlgorithm));
 builder.Services.AddSingleton<IConversationFormatter>(sp =>
     new ConversationFormatter(config.FileNameTemplate));
-builder.Services.AddSingleton<IStorageProvider, FileSystemStorageProvider>();
+
+// Register storage provider based on configuration
+builder.Services.AddSingleton<IStorageProvider>(sp =>
+{
+    var logger = sp.GetRequiredService<ILogger<IStorageProvider>>();
+    var formatter = sp.GetRequiredService<IConversationFormatter>();
+    var options = sp.GetRequiredService<IOptions<DarbotConfiguration>>();
+    
+    return config.Storage.Provider.ToLowerInvariant() switch
+    {
+        "git" => new GitStorageProvider(options, formatter, sp.GetRequiredService<ILogger<GitStorageProvider>>()),
+        "filesystem" => new FileSystemStorageProvider(options, formatter, sp.GetRequiredService<ILogger<FileSystemStorageProvider>>()),
+        _ => throw new InvalidOperationException($"Unknown storage provider: {config.Storage.Provider}")
+    };
+});
+
 builder.Services.AddScoped<IConversationService, ConversationService>();
 
 var app = builder.Build();
@@ -78,6 +106,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseSerilogRequestLogging();
 
 // Health check endpoints
@@ -105,7 +135,8 @@ app.MapPost("/v1/messages:batchWrite", async (
 .WithName("BatchWriteMessages")
 .WithOpenApi()
 .WithSummary("Batch write conversation messages")
-.WithDescription("Writes multiple conversation turns to storage as Markdown files");
+.WithDescription("Writes multiple conversation turns to storage as Markdown files")
+.RequireAuthorization("DarbotMemoryWriter");
 
 app.MapPost("/v1/messages:write", async (
     ConversationTurn turn,
@@ -124,7 +155,8 @@ app.MapPost("/v1/messages:write", async (
 .WithName("WriteMessage")
 .WithOpenApi()
 .WithSummary("Write single conversation message")
-.WithDescription("Writes a single conversation turn to storage as a Markdown file");
+.WithDescription("Writes a single conversation turn to storage as a Markdown file")
+.RequireAuthorization("DarbotMemoryWriter");
 
 // Info endpoint
 app.MapGet("/info", () => new
@@ -156,7 +188,8 @@ app.MapPost("/v1/conversations:search", async (
 .WithName("SearchConversations")
 .WithOpenApi()
 .WithSummary("Search conversation turns")
-.WithDescription("Searches conversation turns based on various criteria like text, date range, model, etc.");
+.WithDescription("Searches conversation turns based on various criteria like text, date range, model, etc.")
+.RequireAuthorization("DarbotMemoryWriter");
 
 app.MapPost("/v1/conversations:list", async (
     ConversationListRequest request,
@@ -171,7 +204,8 @@ app.MapPost("/v1/conversations:list", async (
 .WithName("ListConversations")
 .WithOpenApi()
 .WithSummary("List conversations")
-.WithDescription("Lists conversations with summary information");
+.WithDescription("Lists conversations with summary information")
+.RequireAuthorization("DarbotMemoryWriter");
 
 app.MapGet("/v1/conversations/{conversationId}", async (
     string conversationId,
@@ -192,7 +226,8 @@ app.MapGet("/v1/conversations/{conversationId}", async (
 .WithName("GetConversation")
 .WithOpenApi()
 .WithSummary("Get conversation")
-.WithDescription("Retrieves all turns for a specific conversation");
+.WithDescription("Retrieves all turns for a specific conversation")
+.RequireAuthorization("DarbotMemoryWriter");
 
 app.MapGet("/v1/conversations/{conversationId}/turns/{turnNumber:int}", async (
     string conversationId,
@@ -214,7 +249,8 @@ app.MapGet("/v1/conversations/{conversationId}/turns/{turnNumber:int}", async (
 .WithName("GetConversationTurn")
 .WithOpenApi()
 .WithSummary("Get conversation turn")
-.WithDescription("Retrieves a specific conversation turn by ID and turn number");
+.WithDescription("Retrieves a specific conversation turn by ID and turn number")
+.RequireAuthorization("DarbotMemoryWriter");
 
 app.Run();
 
