@@ -46,3 +46,71 @@ public record BatchWriteResponse
     public IReadOnlyList<string> Errors { get; init; } = Array.Empty<string>();
     public string? Message { get; init; }
 }
+
+/// <summary>
+/// Request model for searching conversations
+/// </summary>
+public record ConversationSearchRequest
+{
+    public string? ConversationId { get; init; }
+    public string? SearchText { get; init; }
+    public string? Model { get; init; }
+    public DateTime? FromDate { get; init; }
+    public DateTime? ToDate { get; init; }
+    public IReadOnlyList<string> ToolsUsed { get; init; } = Array.Empty<string>();
+    public int Skip { get; init; } = 0;
+    public int Take { get; init; } = 50;
+    public string SortBy { get; init; } = "timestamp"; // timestamp, conversationId, turnNumber
+    public bool SortDescending { get; init; } = true;
+}
+
+/// <summary>
+/// Response model for conversation search results
+/// </summary>
+public record ConversationSearchResponse
+{
+    public required IReadOnlyList<ConversationTurn> Results { get; init; }
+    public required int TotalCount { get; init; }
+    public required bool HasMore { get; init; }
+    public required int Skip { get; init; }
+    public required int Take { get; init; }
+}
+
+/// <summary>
+/// Request model for listing conversations
+/// </summary>
+public record ConversationListRequest
+{
+    public int Skip { get; init; } = 0;
+    public int Take { get; init; } = 50;
+    public DateTime? FromDate { get; init; }
+    public DateTime? ToDate { get; init; }
+    public string SortBy { get; init; } = "lastActivity"; // lastActivity, conversationId, turnCount
+    public bool SortDescending { get; init; } = true;
+}
+
+/// <summary>
+/// Summary of a conversation for listing purposes
+/// </summary>
+public record ConversationSummary
+{
+    public required string ConversationId { get; init; }
+    public required int TurnCount { get; init; }
+    public required DateTime FirstTurnTimestamp { get; init; }
+    public required DateTime LastTurnTimestamp { get; init; }
+    public required IReadOnlyList<string> ModelsUsed { get; init; }
+    public required IReadOnlyList<string> ToolsUsed { get; init; }
+    public string? LastPrompt { get; init; }
+}
+
+/// <summary>
+/// Response model for conversation listing
+/// </summary>
+public record ConversationListResponse
+{
+    public required IReadOnlyList<ConversationSummary> Conversations { get; init; }
+    public required int TotalCount { get; init; }
+    public required bool HasMore { get; init; }
+    public required int Skip { get; init; }
+    public required int Take { get; init; }
+}

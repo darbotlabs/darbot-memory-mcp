@@ -18,6 +18,26 @@ public interface IStorageProvider
     Task<BatchWriteResponse> WriteBatchAsync(IEnumerable<ConversationTurn> turns, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Searches for conversation turns based on criteria
+    /// </summary>
+    Task<ConversationSearchResponse> SearchConversationsAsync(ConversationSearchRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lists conversations with summary information
+    /// </summary>
+    Task<ConversationListResponse> ListConversationsAsync(ConversationListRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves a specific conversation turn by ID and turn number
+    /// </summary>
+    Task<ConversationTurn?> GetConversationTurnAsync(string conversationId, int turnNumber, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves all turns for a specific conversation
+    /// </summary>
+    Task<IReadOnlyList<ConversationTurn>> GetConversationAsync(string conversationId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Checks if the storage provider is healthy and accessible
     /// </summary>
     Task<bool> IsHealthyAsync(CancellationToken cancellationToken = default);
@@ -69,4 +89,24 @@ public interface IConversationService
     /// Persists multiple conversation turns in a batch
     /// </summary>
     Task<BatchWriteResponse> PersistBatchAsync(IEnumerable<ConversationTurn> turns, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Searches for conversation turns based on criteria
+    /// </summary>
+    Task<ConversationSearchResponse> SearchConversationsAsync(ConversationSearchRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lists conversations with summary information
+    /// </summary>
+    Task<ConversationListResponse> ListConversationsAsync(ConversationListRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves a specific conversation turn by ID and turn number
+    /// </summary>
+    Task<ConversationTurn?> GetConversationTurnAsync(string conversationId, int turnNumber, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves all turns for a specific conversation
+    /// </summary>
+    Task<IReadOnlyList<ConversationTurn>> GetConversationAsync(string conversationId, CancellationToken cancellationToken = default);
 }

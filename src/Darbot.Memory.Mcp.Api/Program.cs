@@ -135,11 +135,86 @@ app.MapGet("/info", () => new
     Endpoints = new
     {
         Health = new[] { "/health/live", "/health/ready" },
-        Messages = new[] { "/v1/messages:write", "/v1/messages:batchWrite" }
+        Messages = new[] { "/v1/messages:write", "/v1/messages:batchWrite" },
+        Search = new[] { "/v1/conversations:search", "/v1/conversations:list", "/v1/conversations/{conversationId}", "/v1/conversations/{conversationId}/turns/{turnNumber}" }
     }
 })
 .WithName("GetInfo")
 .WithOpenApi();
+
+// Query endpoints
+app.MapPost("/v1/conversations:search", async (
+    ConversationSearchRequest request,
+    IConversationService conversationService,
+    ILogger<Program> logger) =>
+{
+    logger.LogInformation("Received search request");
+
+    var result = await conversationService.SearchConversationsAsync(request);
+    return Results.Ok(result);
+})
+.WithName("SearchConversations")
+.WithOpenApi()
+.WithSummary("Search conversation turns")
+.WithDescription("Searches conversation turns based on various criteria like text, date range, model, etc.");
+
+app.MapPost("/v1/conversations:list", async (
+    ConversationListRequest request,
+    IConversationService conversationService,
+    ILogger<Program> logger) =>
+{
+    logger.LogInformation("Received list conversations request");
+
+    var result = await conversationService.ListConversationsAsync(request);
+    return Results.Ok(result);
+})
+.WithName("ListConversations")
+.WithOpenApi()
+.WithSummary("List conversations")
+.WithDescription("Lists conversations with summary information");
+
+app.MapGet("/v1/conversations/{conversationId}", async (
+    string conversationId,
+    IConversationService conversationService,
+    ILogger<Program> logger) =>
+{
+    logger.LogInformation("Received get conversation request for {ConversationId}", conversationId);
+
+    var result = await conversationService.GetConversationAsync(conversationId);
+    
+    if (!result.Any())
+    {
+        return Results.NotFound(new { Message = $"Conversation {conversationId} not found" });
+    }
+
+    return Results.Ok(new { ConversationId = conversationId, Turns = result });
+})
+.WithName("GetConversation")
+.WithOpenApi()
+.WithSummary("Get conversation")
+.WithDescription("Retrieves all turns for a specific conversation");
+
+app.MapGet("/v1/conversations/{conversationId}/turns/{turnNumber:int}", async (
+    string conversationId,
+    int turnNumber,
+    IConversationService conversationService,
+    ILogger<Program> logger) =>
+{
+    logger.LogInformation("Received get conversation turn request for {ConversationId}:{TurnNumber}", conversationId, turnNumber);
+
+    var result = await conversationService.GetConversationTurnAsync(conversationId, turnNumber);
+    
+    if (result == null)
+    {
+        return Results.NotFound(new { Message = $"Conversation turn {conversationId}:{turnNumber} not found" });
+    }
+
+    return Results.Ok(result);
+})
+.WithName("GetConversationTurn")
+.WithOpenApi()
+.WithSummary("Get conversation turn")
+.WithDescription("Retrieves a specific conversation turn by ID and turn number");
 
 app.Run();
 

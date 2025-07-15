@@ -116,4 +116,105 @@ public class ConversationService : IConversationService
             };
         }
     }
+
+    public async Task<ConversationSearchResponse> SearchConversationsAsync(ConversationSearchRequest request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Searching conversations with criteria: {Criteria}", 
+                System.Text.Json.JsonSerializer.Serialize(request));
+
+            var result = await _storageProvider.SearchConversationsAsync(request, cancellationToken);
+
+            _logger.LogInformation("Search completed: found {Count} results out of {Total} total",
+                result.Results.Count, result.TotalCount);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error searching conversations");
+            return new ConversationSearchResponse
+            {
+                Results = Array.Empty<ConversationTurn>(),
+                TotalCount = 0,
+                HasMore = false,
+                Skip = request.Skip,
+                Take = request.Take
+            };
+        }
+    }
+
+    public async Task<ConversationListResponse> ListConversationsAsync(ConversationListRequest request, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Listing conversations with skip: {Skip}, take: {Take}", request.Skip, request.Take);
+
+            var result = await _storageProvider.ListConversationsAsync(request, cancellationToken);
+
+            _logger.LogInformation("List completed: returned {Count} conversations out of {Total} total",
+                result.Conversations.Count, result.TotalCount);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error listing conversations");
+            return new ConversationListResponse
+            {
+                Conversations = Array.Empty<ConversationSummary>(),
+                TotalCount = 0,
+                HasMore = false,
+                Skip = request.Skip,
+                Take = request.Take
+            };
+        }
+    }
+
+    public async Task<ConversationTurn?> GetConversationTurnAsync(string conversationId, int turnNumber, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving conversation turn {ConversationId}:{TurnNumber}", conversationId, turnNumber);
+
+            var result = await _storageProvider.GetConversationTurnAsync(conversationId, turnNumber, cancellationToken);
+
+            if (result != null)
+            {
+                _logger.LogInformation("Successfully retrieved conversation turn {ConversationId}:{TurnNumber}", conversationId, turnNumber);
+            }
+            else
+            {
+                _logger.LogWarning("Conversation turn {ConversationId}:{TurnNumber} not found", conversationId, turnNumber);
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving conversation turn {ConversationId}:{TurnNumber}", conversationId, turnNumber);
+            return null;
+        }
+    }
+
+    public async Task<IReadOnlyList<ConversationTurn>> GetConversationAsync(string conversationId, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            _logger.LogInformation("Retrieving full conversation {ConversationId}", conversationId);
+
+            var result = await _storageProvider.GetConversationAsync(conversationId, cancellationToken);
+
+            _logger.LogInformation("Successfully retrieved conversation {ConversationId} with {TurnCount} turns", 
+                conversationId, result.Count);
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving conversation {ConversationId}", conversationId);
+            return Array.Empty<ConversationTurn>();
+        }
+    }
 }
