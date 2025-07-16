@@ -114,3 +114,85 @@ public record ConversationListResponse
     public required int Skip { get; init; }
     public required int Take { get; init; }
 }
+
+/// <summary>
+/// Represents a browser history entry
+/// </summary>
+public record BrowserHistoryEntry
+{
+    public required string Id { get; init; }
+    public required string Url { get; init; }
+    public required string Title { get; init; }
+    public required DateTime VisitTime { get; init; }
+    public required int VisitCount { get; init; }
+    public required string ProfileName { get; init; }
+    public required string ProfilePath { get; init; }
+    public DateTime? LastSync { get; init; }
+    public string? Hash { get; init; }
+}
+
+/// <summary>
+/// Represents a browser profile
+/// </summary>
+public record BrowserProfile
+{
+    public required string Name { get; init; }
+    public required string Path { get; init; }
+    public required string DisplayName { get; init; }
+    public required bool IsDefault { get; init; }
+    public DateTime? LastAccessed { get; init; }
+    public DateTime? LastSyncTime { get; init; }
+}
+
+/// <summary>
+/// Request model for browser history search
+/// </summary>
+public record BrowserHistorySearchRequest
+{
+    public string? Url { get; init; }
+    public string? Title { get; init; }
+    public string? Domain { get; init; }
+    public string? ProfileName { get; init; }
+    public DateTime? FromDate { get; init; }
+    public DateTime? ToDate { get; init; }
+    public int Skip { get; init; } = 0;
+    public int Take { get; init; } = 100;
+    public string SortBy { get; init; } = "visitTime"; // visitTime, visitCount, title, url
+    public bool SortDescending { get; init; } = true;
+}
+
+/// <summary>
+/// Response model for browser history search
+/// </summary>
+public record BrowserHistorySearchResponse
+{
+    public required IReadOnlyList<BrowserHistoryEntry> Results { get; init; }
+    public required int TotalCount { get; init; }
+    public required bool HasMore { get; init; }
+    public required int Skip { get; init; }
+    public required int Take { get; init; }
+}
+
+/// <summary>
+/// Request model for browser history sync (delta update)
+/// </summary>
+public record BrowserHistorySyncRequest
+{
+    public DateTime? LastSyncTime { get; init; }
+    public IReadOnlyList<string> ProfileNames { get; init; } = Array.Empty<string>();
+    public bool FullSync { get; init; } = false;
+}
+
+/// <summary>
+/// Response model for browser history sync
+/// </summary>
+public record BrowserHistorySyncResponse
+{
+    public required bool Success { get; init; }
+    public required int NewEntriesCount { get; init; }
+    public required int UpdatedEntriesCount { get; init; }
+    public required DateTime SyncTime { get; init; }
+    public required IReadOnlyList<string> ProcessedProfiles { get; init; }
+    public IReadOnlyList<string> Errors { get; init; } = Array.Empty<string>();
+    public string? Message { get; init; }
+}

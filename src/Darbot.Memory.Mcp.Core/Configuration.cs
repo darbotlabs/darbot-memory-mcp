@@ -13,6 +13,7 @@ public class DarbotConfiguration
     public CorsConfiguration Cors { get; set; } = new();
     public AuthConfiguration Auth { get; set; } = new();
     public DiagnosticsConfiguration Diagnostics { get; set; } = new();
+    public BrowserHistoryConfiguration BrowserHistory { get; set; } = new();
 }
 
 /// <summary>
@@ -21,6 +22,7 @@ public class DarbotConfiguration
 public class StorageConfiguration
 {
     public string Provider { get; set; } = "FileSystem";
+    public string BasePath { get; set; } = "./data";
     public FileSystemConfiguration FileSystem { get; set; } = new();
     public AzureBlobConfiguration AzureBlob { get; set; } = new();
     public GitConfiguration Git { get; set; } = new();
@@ -112,4 +114,18 @@ public class ApplicationInsightsConfiguration
 {
     public string ConnectionString { get; set; } = string.Empty;
     public bool Enabled { get; set; } = false;
+}
+
+/// <summary>
+/// Browser history configuration
+/// </summary>
+public class BrowserHistoryConfiguration
+{
+    public bool Enabled { get; set; } = true;
+    public string SupportedBrowsers { get; set; } = "Edge"; // Edge, Chrome, Firefox (future)
+    public int SyncIntervalMinutes { get; set; } = 60;
+    public int MaxEntriesPerSync { get; set; } = 10000;
+    public bool AutoSyncOnStartup { get; set; } = false;
+    public string[] IncludeProfiles { get; set; } = Array.Empty<string>(); // Empty means all profiles
+    public string[] ExcludeDomains { get; set; } = Array.Empty<string>(); // Domains to exclude from sync
 }

@@ -110,3 +110,81 @@ public interface IConversationService
     /// </summary>
     Task<IReadOnlyList<ConversationTurn>> GetConversationAsync(string conversationId, CancellationToken cancellationToken = default);
 }
+
+/// <summary>
+/// Interface for browser history providers that can read from different browsers
+/// </summary>
+public interface IBrowserHistoryProvider
+{
+    /// <summary>
+    /// Gets all available browser profiles
+    /// </summary>
+    Task<IReadOnlyList<BrowserProfile>> GetProfilesAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reads browser history from a specific profile since a given timestamp
+    /// </summary>
+    Task<IReadOnlyList<BrowserHistoryEntry>> ReadHistoryAsync(string profilePath, DateTime? since = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks if the browser is installed and accessible
+    /// </summary>
+    Task<bool> IsBrowserAvailableAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the browser name (e.g., "Microsoft Edge", "Google Chrome")
+    /// </summary>
+    string BrowserName { get; }
+}
+
+/// <summary>
+/// Interface for browser history storage that persists history entries
+/// </summary>
+public interface IBrowserHistoryStorage
+{
+    /// <summary>
+    /// Stores browser history entries
+    /// </summary>
+    Task<bool> StoreBrowserHistoryAsync(IEnumerable<BrowserHistoryEntry> entries, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Searches stored browser history based on criteria
+    /// </summary>
+    Task<BrowserHistorySearchResponse> SearchBrowserHistoryAsync(BrowserHistorySearchRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the last sync time for a profile
+    /// </summary>
+    Task<DateTime?> GetLastSyncTimeAsync(string profilePath, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Updates the last sync time for a profile
+    /// </summary>
+    Task<bool> UpdateLastSyncTimeAsync(string profilePath, DateTime syncTime, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks if the storage is healthy and accessible
+    /// </summary>
+    Task<bool> IsHealthyAsync(CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Interface for the main browser history service
+/// </summary>
+public interface IBrowserHistoryService
+{
+    /// <summary>
+    /// Syncs browser history from all available profiles (delta update)
+    /// </summary>
+    Task<BrowserHistorySyncResponse> SyncBrowserHistoryAsync(BrowserHistorySyncRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Searches stored browser history
+    /// </summary>
+    Task<BrowserHistorySearchResponse> SearchBrowserHistoryAsync(BrowserHistorySearchRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all available browser profiles
+    /// </summary>
+    Task<IReadOnlyList<BrowserProfile>> GetBrowserProfilesAsync(CancellationToken cancellationToken = default);
+}

@@ -26,6 +26,7 @@ public class SearchFunctionalityTests : IDisposable
         {
             Storage = new StorageConfiguration
             {
+                BasePath = _tempDirectory,
                 FileSystem = new FileSystemConfiguration
                 {
                     RootPath = _tempDirectory

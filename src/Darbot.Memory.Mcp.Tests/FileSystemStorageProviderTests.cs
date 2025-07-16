@@ -27,6 +27,7 @@ public class FileSystemStorageProviderTests : IDisposable
         {
             Storage = new StorageConfiguration
             {
+                BasePath = _tempDirectory,
                 FileSystem = new FileSystemConfiguration
                 {
                     RootPath = _tempDirectory
@@ -61,7 +62,7 @@ public class FileSystemStorageProviderTests : IDisposable
 
         // Assert
         Assert.True(result);
-        var filePath = Path.Combine(_tempDirectory, "test-file.md");
+        var filePath = Path.Combine(_tempDirectory, "conversations", "test-file.md");
         Assert.True(File.Exists(filePath));
         var content = await File.ReadAllTextAsync(filePath);
         Assert.Equal("# Test Content", content);
@@ -92,8 +93,8 @@ public class FileSystemStorageProviderTests : IDisposable
         Assert.True(result.Success);
         Assert.Equal(2, result.ProcessedCount);
         Assert.Empty(result.Errors);
-        Assert.True(File.Exists(Path.Combine(_tempDirectory, "conv1-turn1.md")));
-        Assert.True(File.Exists(Path.Combine(_tempDirectory, "conv1-turn2.md")));
+        Assert.True(File.Exists(Path.Combine(_tempDirectory, "conversations", "conv1-turn1.md")));
+        Assert.True(File.Exists(Path.Combine(_tempDirectory, "conversations", "conv1-turn2.md")));
     }
 
     [Fact]
@@ -117,6 +118,7 @@ public class FileSystemStorageProviderTests : IDisposable
         {
             Storage = new StorageConfiguration
             {
+                BasePath = "/invalid/path/that/should/not/exist",
                 FileSystem = new FileSystemConfiguration
                 {
                     RootPath = "/invalid/path/that/should/not/exist"

@@ -13,7 +13,7 @@ namespace Darbot.Memory.Mcp.Storage.Providers;
 /// </summary>
 public class FileSystemStorageProvider : IStorageProvider
 {
-    private readonly FileSystemConfiguration _config;
+    private readonly string _conversationsPath;
     private readonly IConversationFormatter _formatter;
     private readonly ILogger<FileSystemStorageProvider> _logger;
 
@@ -22,7 +22,12 @@ public class FileSystemStorageProvider : IStorageProvider
         IConversationFormatter formatter,
         ILogger<FileSystemStorageProvider> logger)
     {
-        _config = options.Value.Storage.FileSystem;
+        var config = options.Value;
+        // Use the configured root path or fall back to storage.filesystem.rootpath for backward compatibility
+        var basePath = !string.IsNullOrEmpty(config.Storage.BasePath) 
+            ? config.Storage.BasePath 
+            : config.Storage.FileSystem.RootPath;
+        _conversationsPath = Path.Combine(basePath, "conversations");
         _formatter = formatter;
         _logger = logger;
     }
@@ -32,16 +37,16 @@ public class FileSystemStorageProvider : IStorageProvider
         try
         {
             // Ensure directory exists
-            var directory = new DirectoryInfo(_config.RootPath);
+            var directory = new DirectoryInfo(_conversationsPath);
             if (!directory.Exists)
             {
                 directory.Create();
-                _logger.LogInformation("Created storage directory: {Path}", _config.RootPath);
+                _logger.LogInformation("Created storage directory: {Path}", _conversationsPath);
             }
 
             // Generate filename and content
             var fileName = _formatter.GenerateFileName(turn);
-            var filePath = Path.Combine(_config.RootPath, fileName);
+            var filePath = Path.Combine(_conversationsPath, fileName);
             var content = _formatter.FormatToMarkdown(turn);
 
             // Write to file
@@ -66,11 +71,11 @@ public class FileSystemStorageProvider : IStorageProvider
         try
         {
             // Ensure directory exists
-            var directory = new DirectoryInfo(_config.RootPath);
+            var directory = new DirectoryInfo(_conversationsPath);
             if (!directory.Exists)
             {
                 directory.Create();
-                _logger.LogInformation("Created storage directory: {Path}", _config.RootPath);
+                _logger.LogInformation("Created storage directory: {Path}", _conversationsPath);
             }
 
             foreach (var turn in turnsList)
@@ -78,7 +83,7 @@ public class FileSystemStorageProvider : IStorageProvider
                 try
                 {
                     var fileName = _formatter.GenerateFileName(turn);
-                    var filePath = Path.Combine(_config.RootPath, fileName);
+                    var filePath = Path.Combine(_conversationsPath, fileName);
                     var content = _formatter.FormatToMarkdown(turn);
 
                     await File.WriteAllTextAsync(filePath, content, cancellationToken);
@@ -126,14 +131,14 @@ public class FileSystemStorageProvider : IStorageProvider
         try
         {
             // Check if we can create the directory
-            var directory = new DirectoryInfo(_config.RootPath);
+            var directory = new DirectoryInfo(_conversationsPath);
             if (!directory.Exists)
             {
                 directory.Create();
             }
 
             // Try to write a test file
-            var testFile = Path.Combine(_config.RootPath, ".health-check");
+            var testFile = Path.Combine(_conversationsPath, ".health-check");
             await File.WriteAllTextAsync(testFile, "health-check", cancellationToken);
 
             // Clean up test file
@@ -155,7 +160,7 @@ public class FileSystemStorageProvider : IStorageProvider
     {
         try
         {
-            var directory = new DirectoryInfo(_config.RootPath);
+            var directory = new DirectoryInfo(_conversationsPath);
             if (!directory.Exists)
             {
                 return new ConversationSearchResponse
@@ -223,7 +228,7 @@ public class FileSystemStorageProvider : IStorageProvider
     {
         try
         {
-            var directory = new DirectoryInfo(_config.RootPath);
+            var directory = new DirectoryInfo(_conversationsPath);
             if (!directory.Exists)
             {
                 return new ConversationListResponse
@@ -304,7 +309,7 @@ public class FileSystemStorageProvider : IStorageProvider
     {
         try
         {
-            var directory = new DirectoryInfo(_config.RootPath);
+            var directory = new DirectoryInfo(_conversationsPath);
             if (!directory.Exists)
                 return null;
 
@@ -341,7 +346,7 @@ public class FileSystemStorageProvider : IStorageProvider
     {
         try
         {
-            var directory = new DirectoryInfo(_config.RootPath);
+            var directory = new DirectoryInfo(_conversationsPath);
             if (!directory.Exists)
                 return Array.Empty<ConversationTurn>();
 

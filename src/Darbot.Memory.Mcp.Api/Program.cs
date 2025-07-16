@@ -1,4 +1,5 @@
 using Darbot.Memory.Mcp.Api.Authentication;
+using Darbot.Memory.Mcp.Core.BrowserHistory;
 using Darbot.Memory.Mcp.Core.Configuration;
 using Darbot.Memory.Mcp.Core.Interfaces;
 using Darbot.Memory.Mcp.Core.Models;
@@ -96,6 +97,14 @@ builder.Services.AddSingleton<IStorageProvider>(sp =>
 
 builder.Services.AddScoped<IConversationService, ConversationService>();
 
+// Register browser history services if enabled
+if (config.BrowserHistory.Enabled)
+{
+    builder.Services.AddSingleton<IBrowserHistoryProvider, EdgeHistoryProvider>();
+    builder.Services.AddSingleton<IBrowserHistoryStorage, BrowserHistoryFileStorage>();
+    builder.Services.AddScoped<IBrowserHistoryService, BrowserHistoryService>();
+}
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
@@ -163,12 +172,13 @@ app.MapGet("/info", () => new
 {
     Name = "Darbot Memory MCP",
     Version = "1.0.0-preview",
-    Description = "MCP server for persisting conversational audit trails",
+    Description = "MCP server for persisting conversational audit trails and browser history",
     Endpoints = new
     {
         Health = new[] { "/health/live", "/health/ready" },
         Messages = new[] { "/v1/messages:write", "/v1/messages:batchWrite" },
-        Search = new[] { "/v1/conversations:search", "/v1/conversations:list", "/v1/conversations/{conversationId}", "/v1/conversations/{conversationId}/turns/{turnNumber}" }
+        Search = new[] { "/v1/conversations:search", "/v1/conversations:list", "/v1/conversations/{conversationId}", "/v1/conversations/{conversationId}/turns/{turnNumber}" },
+        BrowserHistory = new[] { "/v1/browser-history:sync", "/v1/browser-history:search", "/v1/browser-history/profiles" }
     }
 })
 .WithName("GetInfo")
@@ -251,6 +261,60 @@ app.MapGet("/v1/conversations/{conversationId}/turns/{turnNumber:int}", async (
 .WithSummary("Get conversation turn")
 .WithDescription("Retrieves a specific conversation turn by ID and turn number")
 .RequireAuthorization("DarbotMemoryWriter");
+
+// Browser History endpoints (only available if browser history is enabled)
+if (config.BrowserHistory.Enabled)
+{
+    app.MapPost("/v1/browser-history:sync", async (
+        BrowserHistorySyncRequest request,
+        IBrowserHistoryService browserHistoryService,
+        ILogger<Program> logger) =>
+    {
+        logger.LogInformation("Received browser history sync request");
+
+        var result = await browserHistoryService.SyncBrowserHistoryAsync(request);
+        
+        return result.Success
+            ? Results.Ok(result)
+            : Results.BadRequest(result);
+    })
+    .WithName("SyncBrowserHistory")
+    .WithOpenApi()
+    .WithSummary("Sync browser history")
+    .WithDescription("Syncs browser history from Edge profiles with delta update support")
+    .RequireAuthorization("DarbotMemoryWriter");
+
+    app.MapPost("/v1/browser-history:search", async (
+        BrowserHistorySearchRequest request,
+        IBrowserHistoryService browserHistoryService,
+        ILogger<Program> logger) =>
+    {
+        logger.LogInformation("Received browser history search request");
+
+        var result = await browserHistoryService.SearchBrowserHistoryAsync(request);
+        return Results.Ok(result);
+    })
+    .WithName("SearchBrowserHistory")
+    .WithOpenApi()
+    .WithSummary("Search browser history")
+    .WithDescription("Searches stored browser history based on various criteria like URL, title, domain, date range, etc.")
+    .RequireAuthorization("DarbotMemoryWriter");
+
+    app.MapGet("/v1/browser-history/profiles", async (
+        IBrowserHistoryService browserHistoryService,
+        ILogger<Program> logger) =>
+    {
+        logger.LogInformation("Received get browser profiles request");
+
+        var result = await browserHistoryService.GetBrowserProfilesAsync();
+        return Results.Ok(new { Profiles = result });
+    })
+    .WithName("GetBrowserProfiles")
+    .WithOpenApi()
+    .WithSummary("Get browser profiles")
+    .WithDescription("Retrieves all available browser profiles for history sync")
+    .RequireAuthorization("DarbotMemoryWriter");
+}
 
 app.Run();
 
