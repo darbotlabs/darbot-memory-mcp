@@ -41,15 +41,7 @@ public class HashCalculator : IHashCalculator
 
         var bytes = Encoding.UTF8.GetBytes(json);
 
-        HashAlgorithm hasher = _algorithm.ToUpperInvariant() switch
-        {
-            "SHA256" => SHA256.Create(),
-            "SHA1" => SHA1.Create(),
-            "MD5" => MD5.Create(),
-            _ => throw new InvalidOperationException($"Hash algorithm {_algorithm} not supported")
-        };
-
-        using (hasher)
+        using (var hasher = _factory.Create(_algorithm))
         {
             var hashBytes = hasher.ComputeHash(bytes);
             return $"{_algorithm.ToLowerInvariant()}-{Convert.ToHexString(hashBytes).ToLowerInvariant()}";
