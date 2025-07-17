@@ -404,16 +404,16 @@ public class FileSystemStorageProvider : IStorageProvider
             }
 
             // Extract content sections
-            var promptMatch = Regex.Match(content, @"## Prompt\s*\n> \*User:\* ""(.+?)""", RegexOptions.Singleline);
-            var modelMatch = Regex.Match(content, @"## Model\s*\n`(.+?)`");
-            var responseMatch = Regex.Match(content, @"## Response\s*\n```\s*\n(.*?)\n```", RegexOptions.Singleline);
+            var promptMatch = PromptRegex.Match(content);
+            var modelMatch = ModelRegex.Match(content);
+            var responseMatch = ResponseRegex.Match(content);
 
             // Extract tools used
-            var toolsSection = Regex.Match(content, @"## Tools Used\s*\n((?:- `[^`]+`\s*\n)*)", RegexOptions.Multiline);
+            var toolsSection = ToolsSectionRegex.Match(content);
             var toolsUsed = new List<string>();
             if (toolsSection.Success)
             {
-                var toolMatches = Regex.Matches(toolsSection.Groups[1].Value, @"- `([^`]+)`");
+                var toolMatches = ToolRegex.Matches(toolsSection.Groups[1].Value);
                 toolsUsed.AddRange(toolMatches.Cast<Match>().Select(m => m.Groups[1].Value));
             }
 
