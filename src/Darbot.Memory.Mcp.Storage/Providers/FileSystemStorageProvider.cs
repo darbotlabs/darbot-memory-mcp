@@ -17,6 +17,13 @@ public class FileSystemStorageProvider : IStorageProvider
     private readonly IConversationFormatter _formatter;
     private readonly ILogger<FileSystemStorageProvider> _logger;
 
+    // Regex patterns for parsing markdown content
+    private static readonly Regex PromptRegex = new(@"## Prompt\s*\n> \*User:\* ""(.+?)""", RegexOptions.Singleline);
+    private static readonly Regex ModelRegex = new(@"## Model\s*\n`(.+?)`", RegexOptions.Singleline);
+    private static readonly Regex ResponseRegex = new(@"## Response\s*\n```\s*\n(.*?)\n```", RegexOptions.Singleline);
+    private static readonly Regex ToolsSectionRegex = new(@"## Tools Used\s*\n((?:- `[^`]+`\s*\n)*)", RegexOptions.Multiline);
+    private static readonly Regex ToolRegex = new(@"- `([^`]+)`", RegexOptions.Multiline);
+
     public FileSystemStorageProvider(
         IOptions<DarbotConfiguration> options,
         IConversationFormatter formatter,
