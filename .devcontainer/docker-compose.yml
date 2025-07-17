@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  devcontainer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ../..:/workspaces:cached
+      - /var/run/docker.sock:/var/run/docker-host.sock
+    working_dir: /workspaces/darbot-memory-mcp
+    command: sleep infinity
+    user: vscode
+    environment:
+      - DOCKER_HOST=unix:///var/run/docker-host.sock
+
+  # Additional services for development
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: darbot_dev
+      POSTGRES_USER: darbot
+      POSTGRES_PASSWORD: devpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  postgres-data:
+  redis-data:

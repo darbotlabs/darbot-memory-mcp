@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{0CEB7821-A083-420F-8761-EC9E86125E27}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Darbot.Memory.Mcp.Api", "src\Darbot.Memory.Mcp.Api\Darbot.Memory.Mcp.Api.csproj", "{1BDC2FA6-3A34-4EFA-AAA4-7F46A10C0DFD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Darbot.Memory.Mcp.Core", "src\Darbot.Memory.Mcp.Core\Darbot.Memory.Mcp.Core.csproj", "{AE8689C7-6001-46C9-8B73-E61866679B86}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Darbot.Memory.Mcp.Storage", "src\Darbot.Memory.Mcp.Storage\Darbot.Memory.Mcp.Storage.csproj", "{2896C5AE-5DB5-45AB-BFC1-7C5BB6092474}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Darbot.Memory.Mcp.Tests", "src\Darbot.Memory.Mcp.Tests\Darbot.Memory.Mcp.Tests.csproj", "{BD63F295-DC73-4EFD-8C38-F3CAF4D8306A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1BDC2FA6-3A34-4EFA-AAA4-7F46A10C0DFD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BDC2FA6-3A34-4EFA-AAA4-7F46A10C0DFD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BDC2FA6-3A34-4EFA-AAA4-7F46A10C0DFD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BDC2FA6-3A34-4EFA-AAA4-7F46A10C0DFD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AE8689C7-6001-46C9-8B73-E61866679B86}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AE8689C7-6001-46C9-8B73-E61866679B86}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AE8689C7-6001-46C9-8B73-E61866679B86}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AE8689C7-6001-46C9-8B73-E61866679B86}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2896C5AE-5DB5-45AB-BFC1-7C5BB6092474}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2896C5AE-5DB5-45AB-BFC1-7C5BB6092474}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2896C5AE-5DB5-45AB-BFC1-7C5BB6092474}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2896C5AE-5DB5-45AB-BFC1-7C5BB6092474}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD63F295-DC73-4EFD-8C38-F3CAF4D8306A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD63F295-DC73-4EFD-8C38-F3CAF4D8306A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD63F295-DC73-4EFD-8C38-F3CAF4D8306A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD63F295-DC73-4EFD-8C38-F3CAF4D8306A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1BDC2FA6-3A34-4EFA-AAA4-7F46A10C0DFD} = {0CEB7821-A083-420F-8761-EC9E86125E27}
+		{AE8689C7-6001-46C9-8B73-E61866679B86} = {0CEB7821-A083-420F-8761-EC9E86125E27}
+		{2896C5AE-5DB5-45AB-BFC1-7C5BB6092474} = {0CEB7821-A083-420F-8761-EC9E86125E27}
+		{BD63F295-DC73-4EFD-8C38-F3CAF4D8306A} = {0CEB7821-A083-420F-8761-EC9E86125E27}
+	EndGlobalSection
+EndGlobal
