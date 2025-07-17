@@ -29,9 +29,16 @@ public class GitStorageProvider : IStorageProvider
         _formatter = formatter;
         _logger = logger;
         _workingDirectory = Path.GetFullPath(_config.RepositoryPath);
+    }
 
-        // Initialize repository if needed
-        InitializeRepositoryAsync().Wait();
+    public static async Task<GitStorageProvider> CreateAsync(
+        IOptions<DarbotConfiguration> options,
+        IConversationFormatter formatter,
+        ILogger<GitStorageProvider> logger)
+    {
+        var provider = new GitStorageProvider(options, formatter, logger);
+        await provider.InitializeRepositoryAsync();
+        return provider;
     }
 
     public async Task<bool> WriteConversationTurnAsync(ConversationTurn turn, CancellationToken cancellationToken = default)
