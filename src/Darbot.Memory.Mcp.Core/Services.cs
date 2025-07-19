@@ -41,7 +41,7 @@ public class HashCalculator : IHashCalculator
 
         var bytes = Encoding.UTF8.GetBytes(json);
 
-        using (var hasher = _factory.Create(_algorithm))
+        using (var hasher = SHA256.Create())
         {
             var hashBytes = hasher.ComputeHash(bytes);
             return $"{_algorithm.ToLowerInvariant()}-{Convert.ToHexString(hashBytes).ToLowerInvariant()}";

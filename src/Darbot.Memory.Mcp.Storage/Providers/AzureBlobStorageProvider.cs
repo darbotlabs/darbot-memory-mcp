@@ -1,5 +1,8 @@
-﻿using System.Globalization;
+using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using Darbot.Memory.Mcp.Core.Configuration;
 using Darbot.Memory.Mcp.Core.Interfaces;
 using Darbot.Memory.Mcp.Core.Models;
@@ -9,13 +12,15 @@ using Microsoft.Extensions.Options;
 namespace Darbot.Memory.Mcp.Storage.Providers;
 
 /// <summary>
-/// File system storage provider that saves conversation turns as Markdown files
+/// Azure Blob Storage provider that saves conversation turns as Markdown files in Azure Blob Storage
 /// </summary>
-public class FileSystemStorageProvider : IStorageProvider
+public class AzureBlobStorageProvider : IStorageProvider
 {
-    private readonly string _conversationsPath;
+    private readonly AzureBlobConfiguration _config;
     private readonly IConversationFormatter _formatter;
-    private readonly ILogger<FileSystemStorageProvider> _logger;
+    private readonly ILogger<AzureBlobStorageProvider> _logger;
+    private readonly BlobServiceClient _blobServiceClient;
+    private readonly BlobContainerClient _containerClient;
 
     // Regex patterns for parsing markdown content
     private static readonly Regex PromptRegex = new(@"## Prompt\s*\n> \*User:\* ""(.+?)""", RegexOptions.Singleline);
@@ -24,47 +29,68 @@ public class FileSystemStorageProvider : IStorageProvider
     private static readonly Regex ToolsSectionRegex = new(@"## Tools Used\s*\n((?:- `[^`]+`\s*\n)*)", RegexOptions.Multiline);
     private static readonly Regex ToolRegex = new(@"- `([^`]+)`", RegexOptions.Multiline);
 
-    public FileSystemStorageProvider(
+    public AzureBlobStorageProvider(
         IOptions<DarbotConfiguration> options,
         IConversationFormatter formatter,
-        ILogger<FileSystemStorageProvider> logger)
+        ILogger<AzureBlobStorageProvider> logger)
     {
-        var config = options.Value;
-        // Use the configured root path or fall back to storage.filesystem.rootpath for backward compatibility
-        var basePath = !string.IsNullOrEmpty(config.Storage.BasePath) 
-            ? config.Storage.BasePath 
-            : config.Storage.FileSystem.RootPath;
-        _conversationsPath = Path.Combine(basePath, "conversations");
+        _config = options.Value.Storage.AzureBlob;
         _formatter = formatter;
         _logger = logger;
+        
+        if (string.IsNullOrEmpty(_config.ConnectionString))
+            throw new ArgumentException("Azure Blob Storage connection string is required", nameof(_config.ConnectionString));
+
+        _blobServiceClient = new BlobServiceClient(_config.ConnectionString);
+        _containerClient = _blobServiceClient.GetBlobContainerClient(_config.ContainerName);
     }
 
     public async Task<bool> WriteConversationTurnAsync(ConversationTurn turn, CancellationToken cancellationToken = default)
     {
         try
         {
-            // Ensure directory exists
-            var directory = new DirectoryInfo(_conversationsPath);
-            if (!directory.Exists)
-            {
-                directory.Create();
-                _logger.LogInformation("Created storage directory: {Path}", _conversationsPath);
-            }
+            // Ensure container exists
+            await _containerClient.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: cancellationToken);
 
             // Generate filename and content
             var fileName = _formatter.GenerateFileName(turn);
-            var filePath = Path.Combine(_conversationsPath, fileName);
             var content = _formatter.FormatToMarkdown(turn);
+            
+            // Upload blob
+            var blobClient = _containerClient.GetBlobClient(fileName);
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
+            
+            var uploadOptions = new BlobUploadOptions
+            {
+                HttpHeaders = new BlobHttpHeaders
+                {
+                    ContentType = "text/markdown",
+                    ContentEncoding = "utf-8"
+                },
+                Metadata = new Dictionary<string, string>
+                {
+                    { "ConversationId", turn.ConversationId },
+                    { "TurnNumber", turn.TurnNumber.ToString() },
+                    { "SchemaVersion", turn.SchemaVersion },
+                    { "Model", turn.Model },
+                    { "Timestamp", turn.UtcTimestamp.ToString("O") }
+                },
+                Tags = new Dictionary<string, string>
+                {
+                    { "Type", "ConversationTurn" },
+                    { "ConversationId", SanitizeTagValue(turn.ConversationId) },
+                    { "Model", SanitizeTagValue(turn.Model) }
+                }
+            };
 
-            // Write to file
-            await File.WriteAllTextAsync(filePath, content, cancellationToken);
+            await blobClient.UploadAsync(stream, uploadOptions, cancellationToken);
 
-            _logger.LogDebug("Wrote conversation turn to file: {FilePath}", filePath);
+            _logger.LogDebug("Wrote conversation turn to Azure Blob Storage: {BlobName}", fileName);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to write conversation turn to file system");
+            _logger.LogError(ex, "Failed to write conversation turn to Azure Blob Storage");
             return false;
         }
     }
@@ -77,26 +103,46 @@ public class FileSystemStorageProvider : IStorageProvider
 
         try
         {
-            // Ensure directory exists
-            var directory = new DirectoryInfo(_conversationsPath);
-            if (!directory.Exists)
-            {
-                directory.Create();
-                _logger.LogInformation("Created storage directory: {Path}", _conversationsPath);
-            }
+            // Ensure container exists
+            await _containerClient.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: cancellationToken);
 
             foreach (var turn in turnsList)
             {
                 try
                 {
                     var fileName = _formatter.GenerateFileName(turn);
-                    var filePath = Path.Combine(_conversationsPath, fileName);
                     var content = _formatter.FormatToMarkdown(turn);
+                    
+                    var blobClient = _containerClient.GetBlobClient(fileName);
+                    using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
+                    
+                    var uploadOptions = new BlobUploadOptions
+                    {
+                        HttpHeaders = new BlobHttpHeaders
+                        {
+                            ContentType = "text/markdown",
+                            ContentEncoding = "utf-8"
+                        },
+                        Metadata = new Dictionary<string, string>
+                        {
+                            { "ConversationId", turn.ConversationId },
+                            { "TurnNumber", turn.TurnNumber.ToString() },
+                            { "SchemaVersion", turn.SchemaVersion },
+                            { "Model", turn.Model },
+                            { "Timestamp", turn.UtcTimestamp.ToString("O") }
+                        },
+                        Tags = new Dictionary<string, string>
+                        {
+                            { "Type", "ConversationTurn" },
+                            { "ConversationId", SanitizeTagValue(turn.ConversationId) },
+                            { "Model", SanitizeTagValue(turn.Model) }
+                        }
+                    };
 
-                    await File.WriteAllTextAsync(filePath, content, cancellationToken);
+                    await blobClient.UploadAsync(stream, uploadOptions, cancellationToken);
                     processedCount++;
 
-                    _logger.LogDebug("Wrote conversation turn to file: {FilePath}", filePath);
+                    _logger.LogDebug("Wrote conversation turn to Azure Blob Storage: {BlobName}", fileName);
                 }
                 catch (Exception ex)
                 {
@@ -109,7 +155,7 @@ public class FileSystemStorageProvider : IStorageProvider
 
             var success = errors.Count == 0;
             var message = success
-                ? $"Successfully wrote {processedCount} conversation turns"
+                ? $"Successfully wrote {processedCount} conversation turns to Azure Blob Storage"
                 : $"Wrote {processedCount}/{turnsList.Count} turns with {errors.Count} errors";
 
             return new BatchWriteResponse
@@ -133,62 +179,23 @@ public class FileSystemStorageProvider : IStorageProvider
         }
     }
 
-    public async Task<bool> IsHealthyAsync(CancellationToken cancellationToken = default)
-    {
-        try
-        {
-            // Check if we can create the directory
-            var directory = new DirectoryInfo(_conversationsPath);
-            if (!directory.Exists)
-            {
-                directory.Create();
-            }
-
-            // Try to write a test file
-            var testFile = Path.Combine(_conversationsPath, ".health-check");
-            await File.WriteAllTextAsync(testFile, "health-check", cancellationToken);
-
-            // Clean up test file
-            if (File.Exists(testFile))
-            {
-                File.Delete(testFile);
-            }
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "FileSystem storage health check failed");
-            return false;
-        }
-    }
-
     public async Task<ConversationSearchResponse> SearchConversationsAsync(ConversationSearchRequest request, CancellationToken cancellationToken = default)
     {
         try
         {
-            var directory = new DirectoryInfo(_conversationsPath);
-            if (!directory.Exists)
-            {
-                return new ConversationSearchResponse
-                {
-                    Results = Array.Empty<ConversationTurn>(),
-                    TotalCount = 0,
-                    HasMore = false,
-                    Skip = request.Skip,
-                    Take = request.Take
-                };
-            }
-
-            // Get all markdown files
-            var files = directory.GetFiles("*.md", SearchOption.TopDirectoryOnly);
             var conversations = new List<ConversationTurn>();
 
-            foreach (var file in files)
+            await foreach (var blobItem in _containerClient.GetBlobsAsync(
+                traits: BlobTraits.Metadata | BlobTraits.Tags,
+                prefix: null,
+                cancellationToken: cancellationToken))
             {
+                if (!blobItem.Name.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 try
                 {
-                    var conversation = await ParseMarkdownFileAsync(file.FullName, cancellationToken);
+                    var conversation = await ParseBlobAsync(blobItem.Name, cancellationToken);
                     if (conversation != null && MatchesSearchCriteria(conversation, request))
                     {
                         conversations.Add(conversation);
@@ -196,7 +203,7 @@ public class FileSystemStorageProvider : IStorageProvider
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to parse markdown file: {FilePath}", file.FullName);
+                    _logger.LogWarning(ex, "Failed to parse blob: {BlobName}", blobItem.Name);
                 }
             }
 
@@ -235,28 +242,19 @@ public class FileSystemStorageProvider : IStorageProvider
     {
         try
         {
-            var directory = new DirectoryInfo(_conversationsPath);
-            if (!directory.Exists)
-            {
-                return new ConversationListResponse
-                {
-                    Conversations = Array.Empty<ConversationSummary>(),
-                    TotalCount = 0,
-                    HasMore = false,
-                    Skip = request.Skip,
-                    Take = request.Take
-                };
-            }
-
-            // Get all markdown files and group by conversation ID
-            var files = directory.GetFiles("*.md", SearchOption.TopDirectoryOnly);
             var conversationGroups = new Dictionary<string, List<ConversationTurn>>();
 
-            foreach (var file in files)
+            await foreach (var blobItem in _containerClient.GetBlobsAsync(
+                traits: BlobTraits.Metadata | BlobTraits.Tags,
+                prefix: null,
+                cancellationToken: cancellationToken))
             {
+                if (!blobItem.Name.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
                 try
                 {
-                    var conversation = await ParseMarkdownFileAsync(file.FullName, cancellationToken);
+                    var conversation = await ParseBlobAsync(blobItem.Name, cancellationToken);
                     if (conversation != null)
                     {
                         // Apply date filtering
@@ -274,7 +272,7 @@ public class FileSystemStorageProvider : IStorageProvider
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to parse markdown file: {FilePath}", file.FullName);
+                    _logger.LogWarning(ex, "Failed to parse blob: {BlobName}", blobItem.Name);
                 }
             }
 
@@ -316,27 +314,21 @@ public class FileSystemStorageProvider : IStorageProvider
     {
         try
         {
-            var directory = new DirectoryInfo(_conversationsPath);
-            if (!directory.Exists)
-                return null;
-
-            // Find files that match the conversation ID and turn number pattern
-            var pattern = $"*{SanitizeForFileName(conversationId)}*{turnNumber:D3}*.md";
-            var files = directory.GetFiles(pattern, SearchOption.TopDirectoryOnly);
-
-            foreach (var file in files)
+            await foreach (var blobItem in _containerClient.GetBlobsAsync(
+                traits: BlobTraits.Metadata,
+                prefix: null,
+                cancellationToken: cancellationToken))
             {
-                try
+                if (!blobItem.Name.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // Quick check using metadata
+                if (blobItem.Metadata.TryGetValue("ConversationId", out var metaConversationId) &&
+                    blobItem.Metadata.TryGetValue("TurnNumber", out var metaTurnNumber) &&
+                    metaConversationId == conversationId &&
+                    metaTurnNumber == turnNumber.ToString())
                 {
-                    var conversation = await ParseMarkdownFileAsync(file.FullName, cancellationToken);
-                    if (conversation?.ConversationId == conversationId && conversation.TurnNumber == turnNumber)
-                    {
-                        return conversation;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to parse markdown file: {FilePath}", file.FullName);
+                    return await ParseBlobAsync(blobItem.Name, cancellationToken);
                 }
             }
 
@@ -353,28 +345,25 @@ public class FileSystemStorageProvider : IStorageProvider
     {
         try
         {
-            var directory = new DirectoryInfo(_conversationsPath);
-            if (!directory.Exists)
-                return Array.Empty<ConversationTurn>();
-
-            // Find all files that match the conversation ID pattern
-            var pattern = $"*{SanitizeForFileName(conversationId)}*.md";
-            var files = directory.GetFiles(pattern, SearchOption.TopDirectoryOnly);
             var conversations = new List<ConversationTurn>();
 
-            foreach (var file in files)
+            await foreach (var blobItem in _containerClient.GetBlobsAsync(
+                traits: BlobTraits.Metadata,
+                prefix: null,
+                cancellationToken: cancellationToken))
             {
-                try
+                if (!blobItem.Name.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                // Quick check using metadata
+                if (blobItem.Metadata.TryGetValue("ConversationId", out var metaConversationId) &&
+                    metaConversationId == conversationId)
                 {
-                    var conversation = await ParseMarkdownFileAsync(file.FullName, cancellationToken);
-                    if (conversation?.ConversationId == conversationId)
+                    var conversation = await ParseBlobAsync(blobItem.Name, cancellationToken);
+                    if (conversation != null)
                     {
                         conversations.Add(conversation);
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Failed to parse markdown file: {FilePath}", file.FullName);
                 }
             }
 
@@ -388,10 +377,47 @@ public class FileSystemStorageProvider : IStorageProvider
         }
     }
 
-    private async Task<ConversationTurn?> ParseMarkdownFileAsync(string filePath, CancellationToken cancellationToken)
+    public async Task<bool> IsHealthyAsync(CancellationToken cancellationToken = default)
     {
-        var content = await File.ReadAllTextAsync(filePath, cancellationToken);
-        return ParseMarkdownContent(content);
+        try
+        {
+            // Try to get blob service properties
+            await _blobServiceClient.GetPropertiesAsync(cancellationToken);
+
+            // Ensure container exists
+            await _containerClient.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: cancellationToken);
+
+            // Try to write a test blob
+            var testBlobClient = _containerClient.GetBlobClient(".health-check");
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes("health-check"));
+            await testBlobClient.UploadAsync(stream, overwrite: true, cancellationToken: cancellationToken);
+
+            // Clean up test blob
+            await testBlobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Azure Blob Storage health check failed");
+            return false;
+        }
+    }
+
+    private async Task<ConversationTurn?> ParseBlobAsync(string blobName, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var blobClient = _containerClient.GetBlobClient(blobName);
+            var response = await blobClient.DownloadContentAsync(cancellationToken);
+            var content = response.Value.Content.ToString();
+            return ParseMarkdownContent(content);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse blob content: {BlobName}", blobName);
+            return null;
+        }
     }
 
     private ConversationTurn? ParseMarkdownContent(string content)
@@ -540,21 +566,14 @@ public class FileSystemStorageProvider : IStorageProvider
         };
     }
 
-    private static string SanitizeForFileName(string input)
+    private static string SanitizeTagValue(string input)
     {
         if (string.IsNullOrEmpty(input))
             return "unknown";
 
-        // Take first 8 characters of conversation ID for filename
-        var sanitized = input.Length > 8 ? input[..8] : input;
-
-        // Replace invalid filename characters
-        var invalidChars = Path.GetInvalidFileNameChars();
-        foreach (var c in invalidChars)
-        {
-            sanitized = sanitized.Replace(c, '_');
-        }
-
-        return sanitized;
+        // Azure blob tags have restrictions: alphanumeric, space, plus, minus, period, colon, equals, underscore, forward slash
+        // Take first 50 characters and replace invalid characters
+        var sanitized = input.Length > 50 ? input[..50] : input;
+        return Regex.Replace(sanitized, @"[^a-zA-Z0-9 +\-.:=_/]", "_");
     }
 }

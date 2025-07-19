@@ -91,6 +91,7 @@ builder.Services.AddSingleton<IStorageProvider>(sp =>
     {
         "git" => new GitStorageProvider(options, formatter, sp.GetRequiredService<ILogger<GitStorageProvider>>()),
         "filesystem" => new FileSystemStorageProvider(options, formatter, sp.GetRequiredService<ILogger<FileSystemStorageProvider>>()),
+        "azureblob" => new AzureBlobStorageProvider(options, formatter, sp.GetRequiredService<ILogger<AzureBlobStorageProvider>>()),
         _ => throw new InvalidOperationException($"Unknown storage provider: {config.Storage.Provider}")
     };
 });
