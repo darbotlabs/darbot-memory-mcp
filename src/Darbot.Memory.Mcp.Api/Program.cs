@@ -4,6 +4,7 @@ using Darbot.Memory.Mcp.Core.Configuration;
 using Darbot.Memory.Mcp.Core.Interfaces;
 using Darbot.Memory.Mcp.Core.Models;
 using Darbot.Memory.Mcp.Core.Services;
+using Darbot.Memory.Mcp.Core.Plugins;
 using Darbot.Memory.Mcp.Storage.Providers;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
@@ -80,23 +81,39 @@ builder.Services.AddSingleton<IHashCalculator>(sp =>
 builder.Services.AddSingleton<IConversationFormatter>(sp =>
     new ConversationFormatter(config.FileNameTemplate));
 
+// Register plugin system
+builder.Services.AddSingleton<IPluginRegistry, PluginRegistry>();
+builder.Services.AddSingleton<IMemoryPlugin, OneNotePlugin>();
+builder.Services.AddSingleton<IMemoryPlugin, GitHubPlugin>();
+
 // Register storage provider based on configuration
-builder.Services.AddSingleton<IStorageProvider>(sp =>
+builder.Services.AddSingleton<IWorkspaceStorageProvider>(sp =>
 {
-    var logger = sp.GetRequiredService<ILogger<IStorageProvider>>();
+    var logger = sp.GetRequiredService<ILogger<IWorkspaceStorageProvider>>();
     var formatter = sp.GetRequiredService<IConversationFormatter>();
     var options = sp.GetRequiredService<IOptions<DarbotConfiguration>>();
+    var pluginRegistry = sp.GetRequiredService<IPluginRegistry>();
+    
+    // Register plugins with the registry
+    foreach (var plugin in sp.GetServices<IMemoryPlugin>())
+    {
+        pluginRegistry.RegisterPlugin(plugin);
+    }
     
     return config.Storage.Provider.ToLowerInvariant() switch
     {
-        "git" => new GitStorageProvider(options, formatter, sp.GetRequiredService<ILogger<GitStorageProvider>>()),
-        "filesystem" => new FileSystemStorageProvider(options, formatter, sp.GetRequiredService<ILogger<FileSystemStorageProvider>>()),
-        "azureblob" => new AzureBlobStorageProvider(options, formatter, sp.GetRequiredService<ILogger<AzureBlobStorageProvider>>()),
+        "git" => throw new NotImplementedException("Git workspace provider not yet implemented"),
+        "filesystem" => new WorkspaceFileSystemStorageProvider(options, formatter, sp.GetRequiredService<ILogger<WorkspaceFileSystemStorageProvider>>(), pluginRegistry),
+        "azureblob" => throw new NotImplementedException("Azure Blob workspace provider not yet implemented"),
         _ => throw new InvalidOperationException($"Unknown storage provider: {config.Storage.Provider}")
     };
 });
 
+// Also register as IStorageProvider for backward compatibility
+builder.Services.AddSingleton<IStorageProvider>(sp => sp.GetRequiredService<IWorkspaceStorageProvider>());
+
 builder.Services.AddScoped<IConversationService, ConversationService>();
+builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 
 // Register browser history services if enabled
 if (config.BrowserHistory.Enabled)
@@ -173,13 +190,14 @@ app.MapGet("/info", () => new
 {
     Name = "Darbot Memory MCP",
     Version = "1.0.0-preview",
-    Description = "MCP server for persisting conversational audit trails and browser history",
+    Description = "MCP server for persisting conversational audit trails, browser history, and workspace contexts",
     Endpoints = new
     {
         Health = new[] { "/health/live", "/health/ready" },
         Messages = new[] { "/v1/messages:write", "/v1/messages:batchWrite" },
         Search = new[] { "/v1/conversations:search", "/v1/conversations:list", "/v1/conversations/{conversationId}", "/v1/conversations/{conversationId}/turns/{turnNumber}" },
-        BrowserHistory = new[] { "/v1/browser-history:sync", "/v1/browser-history:search", "/v1/browser-history/profiles" }
+        BrowserHistory = new[] { "/v1/browser-history:sync", "/v1/browser-history:search", "/v1/browser-history/profiles" },
+        Workspace = new[] { "/v1/workspaces:capture", "/v1/workspaces:restore", "/v1/workspaces:list", "/v1/workspaces/{workspaceId}" }
     }
 })
 .WithName("GetInfo")
@@ -316,6 +334,102 @@ if (config.BrowserHistory.Enabled)
     .WithDescription("Retrieves all available browser profiles for history sync")
     .RequireAuthorization("DarbotMemoryWriter");
 }
+
+// Workspace endpoints
+app.MapPost("/v1/workspaces:capture", async (
+    CaptureWorkspaceRequest request,
+    IWorkspaceService workspaceService,
+    ILogger<Program> logger) =>
+{
+    logger.LogInformation("Received workspace capture request: {WorkspaceName}", request.Name);
+
+    var result = await workspaceService.CaptureWorkspaceAsync(request);
+    
+    return result.Success
+        ? Results.Ok(result)
+        : Results.BadRequest(result);
+})
+.WithName("CaptureWorkspace")
+.WithOpenApi()
+.WithSummary("Capture current workspace")
+.WithDescription("Captures the complete current workspace state including browser, applications, and conversations")
+.RequireAuthorization("DarbotMemoryWriter");
+
+app.MapPost("/v1/workspaces:restore", async (
+    RestoreWorkspaceRequest request,
+    IWorkspaceService workspaceService,
+    ILogger<Program> logger) =>
+{
+    logger.LogInformation("Received workspace restore request: {WorkspaceId}", request.WorkspaceId);
+
+    var result = await workspaceService.RestoreWorkspaceAsync(request);
+    
+    return result.Success
+        ? Results.Ok(result)
+        : Results.BadRequest(result);
+})
+.WithName("RestoreWorkspace")
+.WithOpenApi()
+.WithSummary("Restore workspace")
+.WithDescription("Restores a previously captured workspace state on the current or new device")
+.RequireAuthorization("DarbotMemoryWriter");
+
+app.MapPost("/v1/workspaces:list", async (
+    ListWorkspacesRequest request,
+    IWorkspaceService workspaceService,
+    ILogger<Program> logger) =>
+{
+    logger.LogInformation("Received list workspaces request");
+
+    var result = await workspaceService.ListWorkspacesAsync(request);
+    return Results.Ok(result);
+})
+.WithName("ListWorkspaces")
+.WithOpenApi()
+.WithSummary("List workspaces")
+.WithDescription("Lists all captured workspaces with filtering and pagination support")
+.RequireAuthorization("DarbotMemoryWriter");
+
+app.MapGet("/v1/workspaces/{workspaceId}", async (
+    string workspaceId,
+    IWorkspaceService workspaceService,
+    ILogger<Program> logger) =>
+{
+    logger.LogInformation("Received get workspace request: {WorkspaceId}", workspaceId);
+
+    var result = await workspaceService.GetWorkspaceAsync(workspaceId);
+    
+    if (result == null)
+    {
+        return Results.NotFound(new { Message = $"Workspace {workspaceId} not found" });
+    }
+
+    return Results.Ok(result);
+})
+.WithName("GetWorkspace")
+.WithOpenApi()
+.WithSummary("Get workspace")
+.WithDescription("Retrieves a specific workspace by ID with full context data")
+.RequireAuthorization("DarbotMemoryWriter");
+
+app.MapDelete("/v1/workspaces/{workspaceId}", async (
+    string workspaceId,
+    IWorkspaceService workspaceService,
+    ILogger<Program> logger) =>
+{
+    logger.LogInformation("Received delete workspace request: {WorkspaceId}", workspaceId);
+
+    var result = await workspaceService.DeleteWorkspaceAsync(workspaceId);
+    
+    return result
+        ? Results.Ok(new { Success = true, Message = "Workspace deleted successfully" })
+        : Results.NotFound(new { Success = false, Message = $"Workspace {workspaceId} not found or could not be deleted" });
+})
+.WithName("DeleteWorkspace")
+.WithOpenApi()
+.WithSummary("Delete workspace")
+.WithDescription("Permanently deletes a workspace and all its associated data")
+.RequireAuthorization("DarbotMemoryWriter");
 
 app.Run();
 
