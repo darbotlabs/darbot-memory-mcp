@@ -374,13 +374,15 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
         return Array.Empty<GitHubRepository>().AsReadOnly();
     }
 
+    private const int MaxProcessesLimit = 10; // Limit to avoid overwhelming data
+
     private async Task<IReadOnlyList<OpenApplication>> CaptureRunningApplicationsAsync(CancellationToken cancellationToken)
     {
         try
         {
             var processes = Process.GetProcesses()
                 .Where(p => !string.IsNullOrEmpty(p.MainWindowTitle))
-                .Take(10) // Limit to avoid overwhelming data
+                .Take(MaxProcessesLimit)
                 .Select(p => new OpenApplication
                 {
                     Name = p.ProcessName,
