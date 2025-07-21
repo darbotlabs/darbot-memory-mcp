@@ -451,7 +451,9 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
 
     private static string GenerateWorkspaceMarkdown(WorkspaceContext workspace)
     {
-        var sb = new StringBuilder();
+        // Estimate initial capacity for StringBuilder
+        int estimatedCapacity = 256 + (workspace.BrowserState.OpenTabs.Count * 128);
+        var sb = new StringBuilder(estimatedCapacity);
         sb.AppendLine($"# Workspace: {workspace.Name}");
         sb.AppendLine($"**ID:** `{workspace.WorkspaceId}`");
         sb.AppendLine($"**Device:** {workspace.Device.DeviceName} ({workspace.Device.OperatingSystem})");
