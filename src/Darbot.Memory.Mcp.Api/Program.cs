@@ -94,11 +94,9 @@ builder.Services.AddSingleton<IWorkspaceStorageProvider>(sp =>
     var options = sp.GetRequiredService<IOptions<DarbotConfiguration>>();
     var pluginRegistry = sp.GetRequiredService<IPluginRegistry>();
     
-    // Register plugins with the registry
-    foreach (var plugin in sp.GetServices<IMemoryPlugin>())
-    {
-        pluginRegistry.RegisterPlugin(plugin);
-    }
+    // Lazy plugin registration will be handled by the PluginRegistry
+    pluginRegistry.SetLazyPluginProvider(() => sp.GetServices<IMemoryPlugin>());
+    // Plugins will be registered on demand
     
     return config.Storage.Provider.ToLowerInvariant() switch
     {
