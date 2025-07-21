@@ -242,7 +242,9 @@ public class WorkspaceTests : IDisposable
         // Assert
         Assert.True(response.Success);
         Assert.NotEmpty(response.WorkspaceId);
-        Assert.Equal(request.Name, response.Message?.Contains("successfully") == true ? request.Name : response.WorkspaceId);
+        Assert.NotNull(response.Message);
+        Assert.True(response.Message.Contains("successfully"));
+        Assert.True(response.Message.Contains(request.Name));
         Assert.True(response.ComponentsCount >= 0);
     }
 
