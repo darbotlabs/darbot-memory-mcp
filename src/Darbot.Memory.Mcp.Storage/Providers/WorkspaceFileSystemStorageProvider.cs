@@ -451,49 +451,65 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
 
     private static string GenerateWorkspaceMarkdown(WorkspaceContext workspace)
     {
-        var markdown = $@"# Workspace: {workspace.Name}
-**ID:** `{workspace.WorkspaceId}`
-**Device:** {workspace.Device.DeviceName} ({workspace.Device.OperatingSystem})
-**Created:** {workspace.CreatedUtc:yyyy-MM-dd HH:mm:ss} UTC
-**Last Active:** {workspace.LastAccessedUtc:yyyy-MM-dd HH:mm:ss} UTC
+        var sb = new StringBuilder();
+        sb.AppendLine($"# Workspace: {workspace.Name}");
+        sb.AppendLine($"**ID:** `{workspace.WorkspaceId}`");
+        sb.AppendLine($"**Device:** {workspace.Device.DeviceName} ({workspace.Device.OperatingSystem})");
+        sb.AppendLine($"**Created:** {workspace.CreatedUtc:yyyy-MM-dd HH:mm:ss} UTC");
+        sb.AppendLine($"**Last Active:** {workspace.LastAccessedUtc:yyyy-MM-dd HH:mm:ss} UTC");
+        sb.AppendLine();
+        sb.AppendLine("## Browser State");
+        sb.AppendLine();
+        sb.AppendLine($"### Open Tabs ({workspace.BrowserState.OpenTabs.Count})");
+        foreach (var (tab, i) in workspace.BrowserState.OpenTabs.Select((tab, i) => (tab, i)))
+        {
+            sb.AppendLine($"{i + 1}. **{tab.Title}**");
+            sb.AppendLine($"   - URL: {tab.Url}");
+            sb.AppendLine($"   - Active: {tab.IsActive}");
+            sb.AppendLine($"   - Pinned: {tab.IsPinned}");
+        }
+        sb.AppendLine();
+        sb.AppendLine($"### Bookmarks ({workspace.BrowserState.Bookmarks.Count})");
+        foreach (var b in workspace.BrowserState.Bookmarks)
+        {
+            sb.AppendLine($"- **{b.Title}**: {b.Url}");
+        }
+        sb.AppendLine();
+        sb.AppendLine("## Application State");
+        sb.AppendLine();
+        sb.AppendLine($"### OneNote Notebooks ({workspace.ApplicationState.OneNoteNotebooks.Count})");
+        foreach (var n in workspace.ApplicationState.OneNoteNotebooks)
+        {
+            sb.AppendLine($"- **{n.Name}** ({n.Sections.Count} sections)");
+        }
+        sb.AppendLine();
+        sb.AppendLine($"### GitHub Repositories ({workspace.ApplicationState.GitHubRepos.Count})");
+        foreach (var r in workspace.ApplicationState.GitHubRepos)
+        {
+            sb.AppendLine($"- **{r.FullName}** (branch: {r.CurrentBranch ?? r.DefaultBranch})");
+        }
+        sb.AppendLine();
+        sb.AppendLine($"### Running Applications ({workspace.ApplicationState.RunningApps.Count})");
+        foreach (var a in workspace.ApplicationState.RunningApps)
+        {
+            sb.AppendLine($"- **{a.Name}**: {a.WindowTitle}");
+        }
+        sb.AppendLine();
+        sb.AppendLine($"## Conversations ({workspace.Conversations.Count})");
+        foreach (var c in workspace.Conversations)
+        {
+            sb.AppendLine($"- **{c.ConversationId}**: {c.TurnCount} turns, last active {c.LastActivity:yyyy-MM-dd HH:mm}");
+        }
+        sb.AppendLine();
+        sb.AppendLine("## Restore Commands");
+        sb.AppendLine("```bash");
+        sb.AppendLine("# Restore entire workspace");
+        sb.AppendLine($"darbot-memory restore --workspace \"{workspace.WorkspaceId}\"");
+        sb.AppendLine();
+        sb.AppendLine("# Selective restore");
+        sb.AppendLine($"darbot-memory restore --workspace \"{workspace.WorkspaceId}\" --only browser,onenote");
+        sb.AppendLine("```");
 
-## Browser State
-
-### Open Tabs ({workspace.BrowserState.OpenTabs.Count})
-{string.Join("\n", workspace.BrowserState.OpenTabs.Select((tab, i) => 
-    $"{i + 1}. **{tab.Title}**\n   - URL: {tab.Url}\n   - Active: {tab.IsActive}\n   - Pinned: {tab.IsPinned}"))}
-
-### Bookmarks ({workspace.BrowserState.Bookmarks.Count})
-{string.Join("\n", workspace.BrowserState.Bookmarks.Select(b => $"- **{b.Title}**: {b.Url}"))}
-
-## Application State
-
-### OneNote Notebooks ({workspace.ApplicationState.OneNoteNotebooks.Count})
-{string.Join("\n", workspace.ApplicationState.OneNoteNotebooks.Select(n => 
-    $"- **{n.Name}** ({n.Sections.Count} sections)"))}
-
-### GitHub Repositories ({workspace.ApplicationState.GitHubRepos.Count})
-{string.Join("\n", workspace.ApplicationState.GitHubRepos.Select(r => 
-    $"- **{r.FullName}** (branch: {r.CurrentBranch ?? r.DefaultBranch})"))}
-
-### Running Applications ({workspace.ApplicationState.RunningApps.Count})
-{string.Join("\n", workspace.ApplicationState.RunningApps.Select(a => 
-    $"- **{a.Name}**: {a.WindowTitle}"))}
-
-## Conversations ({workspace.Conversations.Count})
-{string.Join("\n", workspace.Conversations.Select(c => 
-    $"- **{c.ConversationId}**: {c.TurnCount} turns, last active {c.LastActivity:yyyy-MM-dd HH:mm}"))}
-
-## Restore Commands
-```bash
-# Restore entire workspace
-darbot-memory restore --workspace ""{workspace.WorkspaceId}""
-
-# Selective restore
-darbot-memory restore --workspace ""{workspace.WorkspaceId}"" --only browser,onenote
-```
-";
-
-        return markdown;
+        return sb.ToString();
     }
 }
