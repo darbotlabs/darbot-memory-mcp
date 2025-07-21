@@ -376,25 +376,47 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
 
     private const int MaxProcessesLimit = 10; // Limit to avoid overwhelming data
 
+    private static IReadOnlyList<OpenApplication> _cachedApplications = Array.Empty<OpenApplication>().AsReadOnly();
+    private static DateTime _cacheTimestamp = DateTime.MinValue;
+
     private async Task<IReadOnlyList<OpenApplication>> CaptureRunningApplicationsAsync(CancellationToken cancellationToken)
     {
+        if ((DateTime.UtcNow - _cacheTimestamp).TotalMinutes < 1)
+        {
+            return _cachedApplications;
+        }
+
         try
         {
             var processes = Process.GetProcesses()
                 .Where(p => !string.IsNullOrEmpty(p.MainWindowTitle))
                 .Take(MaxProcessesLimit)
-                .Select(p => new OpenApplication
+                .Select(p =>
                 {
-                    Name = p.ProcessName,
-                    ProcessName = p.ProcessName,
-                    ProcessId = p.Id,
-                    WindowTitle = p.MainWindowTitle,
-                    StartTime = p.StartTime.ToUniversalTime()
+                    try
+                    {
+                        return new OpenApplication
+                        {
+                            Name = p.ProcessName,
+                            ProcessName = p.ProcessName,
+                            ProcessId = p.Id,
+                            WindowTitle = p.MainWindowTitle,
+                            StartTime = p.StartTime.ToUniversalTime()
+                        };
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, $"Failed to access properties for process {p.ProcessName} (ID: {p.Id})");
+                        return null;
+                    }
                 })
+                .Where(app => app != null)
                 .ToList();
 
             await Task.Delay(10, cancellationToken);
-            return processes.AsReadOnly();
+            _cachedApplications = processes.AsReadOnly();
+            _cacheTimestamp = DateTime.UtcNow;
+            return _cachedApplications;
         }
         catch (Exception ex)
         {
