@@ -188,3 +188,215 @@ public interface IBrowserHistoryService
     /// </summary>
     Task<IReadOnlyList<BrowserProfile>> GetBrowserProfilesAsync(CancellationToken cancellationToken = default);
 }
+
+// ===============================
+// Plugin Architecture Interfaces
+// ===============================
+
+/// <summary>
+/// Interface for extensible memory plugins
+/// </summary>
+public interface IMemoryPlugin
+{
+    /// <summary>
+    /// Name of the plugin
+    /// </summary>
+    string Name { get; }
+
+    /// <summary>
+    /// Version of the plugin
+    /// </summary>
+    string Version { get; }
+
+    /// <summary>
+    /// Captures the current state managed by this plugin
+    /// </summary>
+    Task<PluginData> CaptureStateAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Restores state from previously captured data
+    /// </summary>
+    Task<bool> RestoreStateAsync(PluginData data, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Validates that the provided data is valid for this plugin
+    /// </summary>
+    Task<bool> ValidateStateAsync(PluginData data, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Checks if the plugin is available and functional
+    /// </summary>
+    Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Registry for managing memory plugins
+/// </summary>
+public interface IPluginRegistry
+{
+    /// <summary>
+    /// Registers a plugin with the system
+    /// </summary>
+    void RegisterPlugin(IMemoryPlugin plugin);
+
+    /// <summary>
+    /// Gets all registered plugins
+    /// </summary>
+    IReadOnlyList<IMemoryPlugin> GetAllPlugins();
+
+    /// <summary>
+    /// Gets a plugin by name
+    /// </summary>
+    IMemoryPlugin? GetPlugin(string name);
+
+    /// <summary>
+    /// Gets all available plugins (registered and functional)
+    /// </summary>
+    Task<IReadOnlyList<IMemoryPlugin>> GetAvailablePluginsAsync(CancellationToken cancellationToken = default);
+}
+
+// ===============================
+// Workspace Interfaces
+// ===============================
+
+/// <summary>
+/// Enhanced storage provider interface that supports workspace operations
+/// </summary>
+public interface IWorkspaceStorageProvider : IStorageProvider
+{
+    // Core Workspace Operations
+    /// <summary>
+    /// Captures the current workspace state
+    /// </summary>
+    Task<WorkspaceContext> CaptureCurrentWorkspaceAsync(CaptureOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Stores a workspace context
+    /// </summary>
+    Task<bool> StoreWorkspaceAsync(WorkspaceContext workspace, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Restores a workspace by ID
+    /// </summary>
+    Task<bool> RestoreWorkspaceAsync(string workspaceId, RestoreOptions options, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets a workspace by ID
+    /// </summary>
+    Task<WorkspaceContext?> GetWorkspaceAsync(string workspaceId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lists workspaces with filtering and pagination
+    /// </summary>
+    Task<ListWorkspacesResponse> ListWorkspacesAsync(ListWorkspacesRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes a workspace by ID
+    /// </summary>
+    Task<bool> DeleteWorkspaceAsync(string workspaceId, CancellationToken cancellationToken = default);
+
+    // Browser Integration
+    /// <summary>
+    /// Captures current browser state from all browsers
+    /// </summary>
+    Task<BrowserState> CaptureBrowserStateAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Restores browser state
+    /// </summary>
+    Task<bool> RestoreBrowserStateAsync(BrowserState state, CancellationToken cancellationToken = default);
+
+    // Application Integration  
+    /// <summary>
+    /// Captures current application state
+    /// </summary>
+    Task<ApplicationState> CaptureApplicationStateAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Restores application state
+    /// </summary>
+    Task<bool> RestoreApplicationStateAsync(ApplicationState state, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Service for managing workspace contexts
+/// </summary>
+public interface IWorkspaceService
+{
+    /// <summary>
+    /// Captures the current workspace state
+    /// </summary>
+    Task<CaptureWorkspaceResponse> CaptureWorkspaceAsync(CaptureWorkspaceRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Restores a workspace by ID
+    /// </summary>
+    Task<RestoreWorkspaceResponse> RestoreWorkspaceAsync(RestoreWorkspaceRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lists all workspaces
+    /// </summary>
+    Task<ListWorkspacesResponse> ListWorkspacesAsync(ListWorkspacesRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets a specific workspace by ID
+    /// </summary>
+    Task<WorkspaceContext?> GetWorkspaceAsync(string workspaceId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes a workspace by ID
+    /// </summary>
+    Task<bool> DeleteWorkspaceAsync(string workspaceId, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
+/// Service for capturing browser state across different browsers
+/// </summary>
+public interface IBrowserIntegrationService
+{
+    /// <summary>
+    /// Captures browser state from all installed browsers
+    /// </summary>
+    Task<BrowserState> CaptureAllBrowsersAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Captures state from a specific browser
+    /// </summary>
+    Task<BrowserState> CaptureBrowserAsync(string browserName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Restores browser state to a specific browser
+    /// </summary>
+    Task<bool> RestoreBrowserStateAsync(BrowserState state, string browserName, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets all available browser adapters
+    /// </summary>
+    IReadOnlyList<string> GetAvailableBrowsers();
+}
+
+/// <summary>
+/// Adapter interface for different browser types
+/// </summary>
+public interface IBrowserAdapter
+{
+    /// <summary>
+    /// Name of the browser this adapter supports
+    /// </summary>
+    string BrowserName { get; }
+
+    /// <summary>
+    /// Checks if the browser is installed and accessible
+    /// </summary>
+    Task<bool> IsInstalledAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Captures the current browser state
+    /// </summary>
+    Task<BrowserState> CaptureStateAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Restores browser state
+    /// </summary>
+    Task<bool> RestoreStateAsync(BrowserState state, CancellationToken cancellationToken = default);
+}

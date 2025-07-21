@@ -351,6 +351,7 @@ FodyWeavers.xsd
 # Runtime data directories
 data/
 conversations/
+workspaces/
 *.log
 
 # Environment files
