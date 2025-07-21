@@ -44,7 +44,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
 
     public async Task<WorkspaceContext> CaptureCurrentWorkspaceAsync(CaptureOptions options, CancellationToken cancellationToken = default)
     {
-        var workspaceId = $"ws-{DateTime.UtcNow:yyyy-MM-dd-HH-mm-ss}-{Environment.MachineName}";
+        var workspaceId = $"ws-{Guid.NewGuid()}";
         
         var deviceInfo = await CaptureDeviceInfoAsync(cancellationToken);
         var browserState = await CaptureBrowserStateAsync(cancellationToken);
