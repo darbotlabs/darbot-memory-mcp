@@ -47,7 +47,7 @@ public class WorkspaceService : IWorkspaceService
                     WorkspaceId = workspace.WorkspaceId,
                     CapturedAt = workspace.CreatedUtc,
                     ComponentsCount = CalculateComponentCount(workspace),
-                    Message = "Workspace captured successfully"
+                    Message = $"Workspace '{workspace.Name}' captured successfully"
                 };
             }
             else

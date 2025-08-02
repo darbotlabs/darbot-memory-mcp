@@ -214,13 +214,13 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
             var deleted = false;
             if (File.Exists(workspaceFile))
             {
-                File.Delete(workspaceFile);
+                await Task.Run(() => File.Delete(workspaceFile), cancellationToken);
                 deleted = true;
             }
 
             if (File.Exists(markdownFile))
             {
-                File.Delete(markdownFile);
+                await Task.Run(() => File.Delete(markdownFile), cancellationToken);
             }
 
             return deleted;
@@ -412,6 +412,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
                     }
                 })
                 .Where(app => app != null)
+                .Cast<OpenApplication>()
                 .ToList();
 
             await Task.Delay(10, cancellationToken);
