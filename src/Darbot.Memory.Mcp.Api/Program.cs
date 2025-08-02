@@ -5,6 +5,7 @@ using Darbot.Memory.Mcp.Core.Interfaces;
 using Darbot.Memory.Mcp.Core.Models;
 using Darbot.Memory.Mcp.Core.Services;
 using Darbot.Memory.Mcp.Core.Plugins;
+using Darbot.Memory.Mcp.Core.Search;
 using Darbot.Memory.Mcp.Storage.Providers;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
@@ -115,6 +116,16 @@ builder.Services.AddSingleton<IStorageProvider>(sp => sp.GetRequiredService<IWor
 builder.Services.AddScoped<IConversationService, ConversationService>();
 builder.Services.AddScoped<IWorkspaceService, WorkspaceService>();
 
+// Register enhanced search services
+builder.Services.AddScoped<IQueryParser, QueryParser>();
+builder.Services.AddScoped<IRelevanceScorer, RelevanceScorer>();
+builder.Services.AddScoped<ISearchIndexer, SearchIndexer>();
+builder.Services.AddScoped<IEnhancedSearchService, EnhancedSearchService>();
+builder.Services.AddScoped<IConversationContextManager, ConversationContextManager>();
+
+// Add controllers
+builder.Services.AddControllers();
+
 // Register browser history services if enabled
 if (config.BrowserHistory.Enabled)
 {
@@ -136,6 +147,9 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseSerilogRequestLogging();
+
+// Map controllers for enhanced search API
+app.MapControllers();
 
 // Health check endpoints
 app.MapHealthChecks("/health/live", new()

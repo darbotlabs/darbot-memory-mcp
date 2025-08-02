@@ -1,4 +1,5 @@
 using Darbot.Memory.Mcp.Core.Models;
+using Darbot.Memory.Mcp.Core.Search;
 
 namespace Darbot.Memory.Mcp.Core.Interfaces;
 
