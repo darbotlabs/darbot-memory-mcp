@@ -3,6 +3,7 @@ using Darbot.Memory.Mcp.Core.Models;
 using Darbot.Memory.Mcp.Core.Configuration;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Runtime.InteropServices;
