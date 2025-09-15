@@ -4,6 +4,24 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    
+    <!-- NuGet Package Information -->
+    <PackageId>Darbot.Memory.Mcp.Core</PackageId>
+    <Title>Darbot Memory MCP Core</Title>
+    <PackageDescription>Core business logic and services for Darbot Memory MCP server - an enterprise-grade Model Context Protocol server for persistent conversational audit trails.</PackageDescription>
+    <Authors>Darbot Labs</Authors>
+    <Company>Darbot Labs</Company>
+    <Product>Darbot Memory MCP</Product>
+    <Copyright>Copyright © 2024 Darbot Labs</Copyright>
+    <PackageTags>mcp;model-context-protocol;conversation;memory;ai;chatbot;audit-trail;enterprise</PackageTags>
+    <PackageProjectUrl>https://github.com/darbotlabs/darbot-memory-mcp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/darbotlabs/darbot-memory-mcp.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>

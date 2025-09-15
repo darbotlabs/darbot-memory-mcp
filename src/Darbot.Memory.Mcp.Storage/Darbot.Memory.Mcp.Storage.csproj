@@ -4,6 +4,24 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    
+    <!-- NuGet Package Information -->
+    <PackageId>Darbot.Memory.Mcp.Storage</PackageId>
+    <Title>Darbot Memory MCP Storage Providers</Title>
+    <PackageDescription>Storage provider implementations for Darbot Memory MCP server - supports FileSystem, Git, and Azure Blob storage backends for conversational audit trails.</PackageDescription>
+    <Authors>Darbot Labs</Authors>
+    <Company>Darbot Labs</Company>
+    <Product>Darbot Memory MCP</Product>
+    <Copyright>Copyright © 2024 Darbot Labs</Copyright>
+    <PackageTags>mcp;model-context-protocol;storage;filesystem;azure-blob;git;conversation;memory;enterprise</PackageTags>
+    <PackageProjectUrl>https://github.com/darbotlabs/darbot-memory-mcp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/darbotlabs/darbot-memory-mcp.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
