@@ -111,7 +111,7 @@ public class ConversationContextManager : IConversationContextManager
         }
     }
 
-    public async Task<IReadOnlyList<PersonalizedSuggestion>> GetPersonalizedSuggestionsAsync(string userId, string query, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<PersonalizedSuggestion>> GetPersonalizedSuggestionsAsync(string userId, string query, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -139,16 +139,16 @@ public class ConversationContextManager : IConversationContextManager
             _logger.LogDebug("Generated {Count} personalized suggestions for user {UserId}", 
                 topSuggestions.Count, userId);
 
-            return topSuggestions;
+            return Task.FromResult<IReadOnlyList<PersonalizedSuggestion>>(topSuggestions);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to generate personalized suggestions for user {UserId}", userId);
-            return Array.Empty<PersonalizedSuggestion>();
+            return Task.FromResult<IReadOnlyList<PersonalizedSuggestion>>(Array.Empty<PersonalizedSuggestion>());
         }
     }
 
-    public async Task<ConversationAnalytics> AnalyzeUserPatternsAsync(string userId, CancellationToken cancellationToken = default)
+    public Task<ConversationAnalytics> AnalyzeUserPatternsAsync(string userId, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -195,16 +195,16 @@ public class ConversationContextManager : IConversationContextManager
             _logger.LogInformation("Generated analytics for user {UserId}: {TotalConversations} conversations, {TotalSearches} searches", 
                 userId, analytics.TotalConversations, analytics.TotalSearches);
 
-            return analytics;
+            return Task.FromResult(analytics);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to analyze user patterns for user {UserId}", userId);
-            throw;
+            return Task.FromException<ConversationAnalytics>(ex);
         }
     }
 
-    public async Task CleanupOldContextAsync(CancellationToken cancellationToken = default)
+    public Task CleanupOldContextAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -225,11 +225,12 @@ public class ConversationContextManager : IConversationContextManager
             }
 
             _logger.LogInformation("Cleaned up {Count} old contexts", usersToRemove.Count);
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to cleanup old contexts");
-            throw;
+            return Task.FromException(ex);
         }
     }
 
@@ -248,7 +249,7 @@ public class ConversationContextManager : IConversationContextManager
         };
     }
 
-    private async Task UpdateTopicInterestsFromSearch(string userId, SearchPattern pattern, CancellationToken cancellationToken)
+    private Task UpdateTopicInterestsFromSearch(string userId, SearchPattern pattern, CancellationToken cancellationToken)
     {
         var context = GetOrCreateContext(userId);
         var topics = ExtractTopicsFromQuery(pattern.Query);
@@ -288,9 +289,10 @@ public class ConversationContextManager : IConversationContextManager
 
         var updatedContext = context with { TopicInterests = updatedInterests };
         _contexts.TryUpdate(userId, updatedContext, context);
+        return Task.CompletedTask;
     }
 
-    private async Task UpdatePreferencesFromInteraction(string userId, ConversationInteraction interaction, CancellationToken cancellationToken)
+    private Task UpdatePreferencesFromInteraction(string userId, ConversationInteraction interaction, CancellationToken cancellationToken)
     {
         var context = GetOrCreateContext(userId);
         var model = ExtractModelFromInteraction(interaction);
@@ -319,6 +321,7 @@ public class ConversationContextManager : IConversationContextManager
         };
 
         _contexts.TryUpdate(userId, updatedContext, context);
+        return Task.CompletedTask;
     }
 
     private IReadOnlyList<PersonalizedSuggestion> GenerateHistoryBasedSuggestions(ConversationContext context, string query)

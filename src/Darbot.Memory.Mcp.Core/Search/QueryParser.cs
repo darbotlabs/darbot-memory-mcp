@@ -17,7 +17,7 @@ public class QueryParser : IQueryParser
         _patterns = InitializePatterns();
     }
 
-    public async Task<ParsedQuery> ParseQueryAsync(string query, Dictionary<string, object> context, CancellationToken cancellationToken = default)
+    public Task<ParsedQuery> ParseQueryAsync(string query, Dictionary<string, object> context, CancellationToken cancellationToken = default)
     {
         var normalizedQuery = query.Trim();
         _logger.LogDebug("Parsing query: {Query}", normalizedQuery);
@@ -47,7 +47,7 @@ public class QueryParser : IQueryParser
         _logger.LogDebug("Query parsed: Intent={Intent}, Terms={Terms}, Complexity={Complexity}", 
             intent, string.Join(", ", terms), complexity);
 
-        return parsedQuery;
+        return Task.FromResult(parsedQuery);
     }
 
     private List<QueryPattern> InitializePatterns()

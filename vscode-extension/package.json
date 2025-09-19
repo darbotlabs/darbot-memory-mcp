@@ -1,0 +1,179 @@
+{
+    "name": "darbot-memory-mcp",
+    "displayName": "Darbot Memory MCP",
+    "description": "VS Code extension for Darbot Memory MCP server integration",
+    "version": "1.0.0",
+    "publisher": "darbot-labs",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/darbotlabs/darbot-memory-mcp.git"
+    },
+    "engines": {
+        "vscode": "^1.85.0"
+    },
+    "categories": [
+        "Other",
+        "AI",
+        "Notebooks"
+    ],
+    "keywords": [
+        "mcp",
+        "memory",
+        "conversation",
+        "ai",
+        "assistant",
+        "audit",
+        "trail"
+    ],
+    "activationEvents": [
+        "onStartupFinished"
+    ],
+    "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "darbotMemoryMcp.startServer",
+                "title": "Start MCP Server",
+                "category": "Darbot Memory"
+            },
+            {
+                "command": "darbotMemoryMcp.stopServer",
+                "title": "Stop MCP Server",
+                "category": "Darbot Memory"
+            },
+            {
+                "command": "darbotMemoryMcp.captureWorkspace",
+                "title": "Capture Current Workspace",
+                "category": "Darbot Memory"
+            },
+            {
+                "command": "darbotMemoryMcp.searchConversations",
+                "title": "Search Conversations",
+                "category": "Darbot Memory"
+            },
+            {
+                "command": "darbotMemoryMcp.viewConversations",
+                "title": "View Conversations",
+                "category": "Darbot Memory"
+            },
+            {
+                "command": "darbotMemoryMcp.openConfig",
+                "title": "Open Configuration",
+                "category": "Darbot Memory"
+            }
+        ],
+        "viewsContainers": {
+            "activitybar": [
+                {
+                    "id": "darbotMemoryMcp",
+                    "title": "Darbot Memory MCP",
+                    "icon": "$(database)"
+                }
+            ]
+        },
+        "views": {
+            "darbotMemoryMcp": [
+                {
+                    "id": "darbotMemoryMcp.serverStatus",
+                    "name": "Server Status",
+                    "when": "true"
+                },
+                {
+                    "id": "darbotMemoryMcp.conversations",
+                    "name": "Recent Conversations",
+                    "when": "true"
+                },
+                {
+                    "id": "darbotMemoryMcp.workspaces",
+                    "name": "Captured Workspaces",
+                    "when": "true"
+                }
+            ]
+        },
+        "configuration": {
+            "title": "Darbot Memory MCP",
+            "properties": {
+                "darbotMemoryMcp.serverPath": {
+                    "type": "string",
+                    "default": "",
+                    "description": "Path to the Darbot Memory MCP server executable"
+                },
+                "darbotMemoryMcp.serverPort": {
+                    "type": "number",
+                    "default": 5093,
+                    "description": "Port for the MCP server"
+                },
+                "darbotMemoryMcp.autoStart": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Automatically start the MCP server when VS Code starts"
+                },
+                "darbotMemoryMcp.storagePath": {
+                    "type": "string",
+                    "default": "./conversations",
+                    "description": "Path where conversations will be stored"
+                },
+                "darbotMemoryMcp.authMode": {
+                    "type": "string",
+                    "default": "None",
+                    "enum": ["None", "ApiKey", "AzureAD"],
+                    "description": "Authentication mode for the MCP server"
+                },
+                "darbotMemoryMcp.apiKey": {
+                    "type": "string",
+                    "default": "",
+                    "description": "API Key for MCP server authentication (when using ApiKey auth mode)"
+                }
+            }
+        },
+        "menus": {
+            "view/title": [
+                {
+                    "command": "darbotMemoryMcp.startServer",
+                    "when": "view == darbotMemoryMcp.serverStatus",
+                    "group": "navigation"
+                },
+                {
+                    "command": "darbotMemoryMcp.captureWorkspace",
+                    "when": "view == darbotMemoryMcp.workspaces",
+                    "group": "navigation"
+                }
+            ],
+            "commandPalette": [
+                {
+                    "command": "darbotMemoryMcp.startServer"
+                },
+                {
+                    "command": "darbotMemoryMcp.stopServer"
+                },
+                {
+                    "command": "darbotMemoryMcp.captureWorkspace"
+                },
+                {
+                    "command": "darbotMemoryMcp.searchConversations"
+                },
+                {
+                    "command": "darbotMemoryMcp.viewConversations"
+                },
+                {
+                    "command": "darbotMemoryMcp.openConfig"
+                }
+            ]
+        }
+    },
+    "scripts": {
+        "vscode:prepublish": "npm run compile",
+        "compile": "tsc -p ./",
+        "watch": "tsc -watch -p ./"
+    },
+    "devDependencies": {
+        "@types/vscode": "^1.85.0",
+        "@types/node": "^18.x",
+        "typescript": "^5.3.0"
+    },
+    "dependencies": {
+        "axios": "^1.6.0",
+        "ws": "^8.14.0"
+    }
+}

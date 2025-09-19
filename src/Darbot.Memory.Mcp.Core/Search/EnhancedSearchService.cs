@@ -308,7 +308,7 @@ public class EnhancedSearchService : IEnhancedSearchService
         return suggestions.Take(5).ToList();
     }
 
-    private async Task<IEnumerable<SearchSuggestion>> GenerateQueryExpansions(string query, CancellationToken cancellationToken)
+    private Task<IEnumerable<SearchSuggestion>> GenerateQueryExpansions(string query, CancellationToken cancellationToken)
     {
         var expansions = new List<SearchSuggestion>();
 
@@ -335,10 +335,10 @@ public class EnhancedSearchService : IEnhancedSearchService
             });
         }
 
-        return expansions;
+        return Task.FromResult<IEnumerable<SearchSuggestion>>(expansions);
     }
 
-    private async Task<IEnumerable<SearchSuggestion>> GenerateTypoCorrections(string query, CancellationToken cancellationToken)
+    private Task<IEnumerable<SearchSuggestion>> GenerateTypoCorrections(string query, CancellationToken cancellationToken)
     {
         // Simple typo correction suggestions (in a real implementation, you'd use a proper spell checker)
         var corrections = new List<SearchSuggestion>();
@@ -367,10 +367,10 @@ public class EnhancedSearchService : IEnhancedSearchService
             }
         }
 
-        return corrections;
+        return Task.FromResult<IEnumerable<SearchSuggestion>>(corrections);
     }
 
-    private async Task<IEnumerable<SearchSuggestion>> GenerateRelatedTopics(string query, CancellationToken cancellationToken)
+    private Task<IEnumerable<SearchSuggestion>> GenerateRelatedTopics(string query, CancellationToken cancellationToken)
     {
         var topics = new List<SearchSuggestion>();
 
@@ -400,10 +400,10 @@ public class EnhancedSearchService : IEnhancedSearchService
             }
         }
 
-        return topics;
+        return Task.FromResult<IEnumerable<SearchSuggestion>>(topics);
     }
 
-    private async Task<IEnumerable<SearchSuggestion>> GenerateIntentBasedSuggestions(SearchIntent intent, CancellationToken cancellationToken)
+    private Task<IEnumerable<SearchSuggestion>> GenerateIntentBasedSuggestions(SearchIntent intent, CancellationToken cancellationToken)
     {
         var suggestions = new List<SearchSuggestion>();
 
@@ -440,7 +440,7 @@ public class EnhancedSearchService : IEnhancedSearchService
                 break;
         }
 
-        return suggestions;
+        return Task.FromResult<IEnumerable<SearchSuggestion>>(suggestions);
     }
 
     private async Task<IReadOnlyList<RelatedConversation>> FindSimilarConversations(
@@ -484,7 +484,7 @@ public class EnhancedSearchService : IEnhancedSearchService
             .ToList();
     }
 
-    private async Task<ConversationSimilarity> CalculateConversationSimilarity(
+    private Task<ConversationSimilarity> CalculateConversationSimilarity(
         IReadOnlyList<ConversationTurn> targetConversation,
         ConversationSummary candidate,
         CancellationToken cancellationToken)
@@ -536,7 +536,7 @@ public class EnhancedSearchService : IEnhancedSearchService
         similarity.CommonTopics = commonKeywords;
         similarity.Explanation = GenerateSimilarityExplanation(similarity);
 
-        return similarity;
+        return Task.FromResult(similarity);
     }
 
     private IReadOnlyList<string> ExtractKeywords(string text)
