@@ -447,6 +447,9 @@ app.MapDelete("/v1/workspaces/{workspaceId}", async (
 
 app.Run();
 
+// Make Program class public for testing
+public partial class Program { }
+
 // Health check for storage provider
 public class StorageHealthCheck : IHealthCheck
 {

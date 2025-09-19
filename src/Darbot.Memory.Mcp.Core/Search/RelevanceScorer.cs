@@ -12,17 +12,15 @@ public class RelevanceScorer : IRelevanceScorer
     private readonly ILogger<RelevanceScorer> _logger;
     private readonly Dictionary<string, double> _termFrequencies;
     private readonly Dictionary<string, int> _documentFrequencies;
-    private int _totalDocuments;
 
     public RelevanceScorer(ILogger<RelevanceScorer> logger)
     {
         _logger = logger;
         _termFrequencies = new Dictionary<string, double>();
         _documentFrequencies = new Dictionary<string, int>();
-        _totalDocuments = 0;
     }
 
-    public async Task<RelevanceScore> CalculateRelevanceAsync(ConversationTurn turn, ParsedQuery query, CancellationToken cancellationToken = default)
+    public Task<RelevanceScore> CalculateRelevanceAsync(ConversationTurn turn, ParsedQuery query, CancellationToken cancellationToken = default)
     {
         var scores = new List<(string component, double score, double weight)>();
 
@@ -47,11 +45,11 @@ public class RelevanceScorer : IRelevanceScorer
         _logger.LogDebug("Calculated relevance score {Score} for turn {ConversationId}:{TurnNumber}", 
             totalScore, turn.ConversationId, turn.TurnNumber);
 
-        return new RelevanceScore
+        return Task.FromResult(new RelevanceScore
         {
             Score = totalScore,
             Explanation = explanation
-        };
+        });
     }
 
     private double CalculateTextRelevance(string text, ParsedQuery query)
@@ -362,7 +360,7 @@ public class SearchIndexer : ISearchIndexer
         _index = new Dictionary<string, object>();
     }
 
-    public async Task IndexConversationAsync(ConversationTurn turn, CancellationToken cancellationToken = default)
+    public Task IndexConversationAsync(ConversationTurn turn, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -385,15 +383,18 @@ public class SearchIndexer : ISearchIndexer
 
             _logger.LogDebug("Successfully indexed conversation turn {ConversationId}:{TurnNumber}", 
                 turn.ConversationId, turn.TurnNumber);
+                
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to index conversation turn {ConversationId}:{TurnNumber}", 
                 turn.ConversationId, turn.TurnNumber);
+            return Task.FromException(ex);
         }
     }
 
-    public async Task RecordInteractionAsync(SearchInteraction interaction, CancellationToken cancellationToken = default)
+    public Task RecordInteractionAsync(SearchInteraction interaction, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -405,14 +406,16 @@ public class SearchIndexer : ISearchIndexer
             _index[interactionKey] = interaction;
 
             _logger.LogDebug("Successfully recorded search interaction");
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to record search interaction for query: {Query}", interaction.Query);
+            return Task.FromException(ex);
         }
     }
 
-    public async Task RebuildIndicesAsync(CancellationToken cancellationToken = default)
+    public Task RebuildIndicesAsync(CancellationToken cancellationToken = default)
     {
         try
         {
@@ -422,11 +425,12 @@ public class SearchIndexer : ISearchIndexer
             _index.Clear();
 
             _logger.LogInformation("Search index rebuild completed");
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to rebuild search indices");
-            throw;
+            return Task.FromException(ex);
         }
     }
 }
