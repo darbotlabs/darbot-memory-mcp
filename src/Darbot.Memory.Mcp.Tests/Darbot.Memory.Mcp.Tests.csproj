@@ -23,11 +23,14 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
     <PackageReference Include="Moq" Version="4.20.69" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.0" />
+    <PackageReference Include="FluentAssertions" Version="6.12.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../Darbot.Memory.Mcp.Core/Darbot.Memory.Mcp.Core.csproj" />
     <ProjectReference Include="../Darbot.Memory.Mcp.Storage/Darbot.Memory.Mcp.Storage.csproj" />
+    <ProjectReference Include="../Darbot.Memory.Mcp.Api/Darbot.Memory.Mcp.Api.csproj" />
   </ItemGroup>
 
 </Project>
