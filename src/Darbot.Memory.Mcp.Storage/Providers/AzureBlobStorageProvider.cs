@@ -37,7 +37,7 @@ public class AzureBlobStorageProvider : IStorageProvider
         _config = options.Value.Storage.AzureBlob;
         _formatter = formatter;
         _logger = logger;
-        
+
         if (string.IsNullOrEmpty(_config.ConnectionString))
             throw new ArgumentException("Azure Blob Storage connection string is required", nameof(_config.ConnectionString));
 
@@ -55,11 +55,11 @@ public class AzureBlobStorageProvider : IStorageProvider
             // Generate filename and content
             var fileName = _formatter.GenerateFileName(turn);
             var content = _formatter.FormatToMarkdown(turn);
-            
+
             // Upload blob
             var blobClient = _containerClient.GetBlobClient(fileName);
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
-            
+
             var uploadOptions = new BlobUploadOptions
             {
                 HttpHeaders = new BlobHttpHeaders
@@ -112,10 +112,10 @@ public class AzureBlobStorageProvider : IStorageProvider
                 {
                     var fileName = _formatter.GenerateFileName(turn);
                     var content = _formatter.FormatToMarkdown(turn);
-                    
+
                     var blobClient = _containerClient.GetBlobClient(fileName);
                     using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
-                    
+
                     var uploadOptions = new BlobUploadOptions
                     {
                         HttpHeaders = new BlobHttpHeaders
@@ -506,7 +506,7 @@ public class AzureBlobStorageProvider : IStorageProvider
         // Filter by tools used
         if (request.ToolsUsed.Any())
         {
-            if (!request.ToolsUsed.Any(tool => conversation.ToolsUsed.Any(used => 
+            if (!request.ToolsUsed.Any(tool => conversation.ToolsUsed.Any(used =>
                 used.Contains(tool, StringComparison.OrdinalIgnoreCase))))
             {
                 return false;

@@ -62,7 +62,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
 
             if (!string.Equals(apiKey, _config.Auth.ApiKey, StringComparison.Ordinal))
             {
-                Logger.LogWarning("Invalid API key provided from {RemoteIpAddress}", 
+                Logger.LogWarning("Invalid API key provided from {RemoteIpAddress}",
                     Request.HttpContext.Connection.RemoteIpAddress);
                 return Task.FromResult(AuthenticateResult.Fail("Invalid API key"));
             }
@@ -78,7 +78,7 @@ public class ApiKeyAuthenticationHandler : AuthenticationHandler<ApiKeyAuthentic
             var principal = new ClaimsPrincipal(identity);
             var ticket = new AuthenticationTicket(principal, Scheme.Name);
 
-            Logger.LogInformation("API Key authentication successful for {RemoteIpAddress}", 
+            Logger.LogInformation("API Key authentication successful for {RemoteIpAddress}",
                 Request.HttpContext.Connection.RemoteIpAddress);
 
             return Task.FromResult(AuthenticateResult.Success(ticket));

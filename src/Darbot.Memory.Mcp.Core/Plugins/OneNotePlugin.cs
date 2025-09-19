@@ -27,7 +27,7 @@ public class OneNotePlugin : IMemoryPlugin
             // In a real implementation, this would use Microsoft Graph API to capture OneNote data
             // For now, we'll simulate the structure
             var notebooks = await SimulateOneNoteCaptureAsync(cancellationToken);
-            
+
             return new PluginData
             {
                 Type = "OneNote",
@@ -59,7 +59,7 @@ public class OneNotePlugin : IMemoryPlugin
 
             // In a real implementation, this would restore OneNote notebooks
             // For now, we'll simulate the restoration
-            _logger.LogInformation("Simulating OneNote restoration for {Count} notebooks", 
+            _logger.LogInformation("Simulating OneNote restoration for {Count} notebooks",
                 data.Metadata.TryGetValue("Count", out var count) ? count : "unknown");
 
             await Task.Delay(100, cancellationToken); // Simulate restoration work
@@ -75,9 +75,9 @@ public class OneNotePlugin : IMemoryPlugin
     public async Task<bool> ValidateStateAsync(PluginData data, CancellationToken cancellationToken = default)
     {
         await Task.Delay(10, cancellationToken); // Simulate validation
-        
-        return data.Type == "OneNote" && 
-               data.Data != null && 
+
+        return data.Type == "OneNote" &&
+               data.Data != null &&
                data.Metadata.ContainsKey("Count");
     }
 

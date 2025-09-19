@@ -20,9 +20,9 @@ public class PluginRegistry : IPluginRegistry
     public void RegisterPlugin(IMemoryPlugin plugin)
     {
         ArgumentNullException.ThrowIfNull(plugin);
-        
+
         _plugins[plugin.Name] = plugin;
-        _logger.LogInformation("Registered plugin: {PluginName} v{PluginVersion}", 
+        _logger.LogInformation("Registered plugin: {PluginName} v{PluginVersion}",
             plugin.Name, plugin.Version);
     }
 

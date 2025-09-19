@@ -42,7 +42,7 @@ public class RelevanceScorer : IRelevanceScorer
 
         var explanation = GenerateScoreExplanation(scores, totalScore, query.Intent);
 
-        _logger.LogDebug("Calculated relevance score {Score} for turn {ConversationId}:{TurnNumber}", 
+        _logger.LogDebug("Calculated relevance score {Score} for turn {ConversationId}:{TurnNumber}",
             totalScore, turn.ConversationId, turn.TurnNumber);
 
         return Task.FromResult(new RelevanceScore
@@ -61,7 +61,7 @@ public class RelevanceScorer : IRelevanceScorer
         var relevanceScore = 0.0;
 
         // Exact phrase matching (highest weight)
-        if (!string.IsNullOrEmpty(query.ProcessedQuery) && 
+        if (!string.IsNullOrEmpty(query.ProcessedQuery) &&
             textLower.Contains(query.ProcessedQuery.ToLowerInvariant()))
         {
             relevanceScore += 0.8;
@@ -72,15 +72,15 @@ public class RelevanceScorer : IRelevanceScorer
         {
             var termLower = term.ToLowerInvariant();
             var termCount = CountOccurrences(textLower, termLower);
-            
+
             if (termCount > 0)
             {
                 // Term frequency component
                 var tf = (double)termCount / GetWordCount(text);
-                
+
                 // Simple IDF approximation (would be better with actual corpus statistics)
                 var idf = Math.Log(1000 / Math.Max(GetTermDocumentFrequency(termLower), 1));
-                
+
                 var tfidf = tf * idf;
                 relevanceScore += Math.Min(tfidf * 0.1, 0.3); // Cap individual term contribution
             }
@@ -102,7 +102,7 @@ public class RelevanceScorer : IRelevanceScorer
             return 0;
 
         var modelLower = model.ToLowerInvariant();
-        
+
         // Check if any query terms match the model name
         foreach (var term in query.Terms)
         {
@@ -159,7 +159,7 @@ public class RelevanceScorer : IRelevanceScorer
     {
         // More recent conversations get slight boost
         var daysSinceCreation = (DateTime.UtcNow - turnTimestamp).TotalDays;
-        
+
         // Decay function: newer conversations get higher scores
         return Math.Max(0, 1 - (daysSinceCreation / 365)); // Decay over a year
     }
@@ -240,7 +240,7 @@ public class RelevanceScorer : IRelevanceScorer
     private bool ContainsCodeBlocks(string text)
     {
         // Check for common code block indicators
-        return text.Contains("```") || text.Contains("```") || 
+        return text.Contains("```") || text.Contains("```") ||
                Regex.IsMatch(text, @"^\s*[\w\s]+\(\s*\)", RegexOptions.Multiline) ||
                text.Contains("function") || text.Contains("class") || text.Contains("def ");
     }
@@ -341,7 +341,7 @@ public class RelevanceScorer : IRelevanceScorer
         }
 
         var explanation = $"Total: {totalScore:F2}. " + string.Join("; ", explanations);
-        
+
         return explanation.Length > 200 ? explanation.Substring(0, 197) + "..." : explanation;
     }
 }
@@ -364,7 +364,7 @@ public class SearchIndexer : ISearchIndexer
     {
         try
         {
-            _logger.LogDebug("Indexing conversation turn {ConversationId}:{TurnNumber}", 
+            _logger.LogDebug("Indexing conversation turn {ConversationId}:{TurnNumber}",
                 turn.ConversationId, turn.TurnNumber);
 
             // In a real implementation, this would add to a search index like Elasticsearch or Azure Search
@@ -381,14 +381,14 @@ public class SearchIndexer : ISearchIndexer
                 IndexedAt = DateTime.UtcNow
             };
 
-            _logger.LogDebug("Successfully indexed conversation turn {ConversationId}:{TurnNumber}", 
+            _logger.LogDebug("Successfully indexed conversation turn {ConversationId}:{TurnNumber}",
                 turn.ConversationId, turn.TurnNumber);
                 
             return Task.CompletedTask;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to index conversation turn {ConversationId}:{TurnNumber}", 
+            _logger.LogError(ex, "Failed to index conversation turn {ConversationId}:{TurnNumber}",
                 turn.ConversationId, turn.TurnNumber);
             return Task.FromException(ex);
         }
@@ -398,7 +398,7 @@ public class SearchIndexer : ISearchIndexer
     {
         try
         {
-            _logger.LogDebug("Recording search interaction: {Type} for query: {Query}", 
+            _logger.LogDebug("Recording search interaction: {Type} for query: {Query}",
                 interaction.Type, interaction.Query);
 
             // In a real implementation, this would store interaction data for analytics

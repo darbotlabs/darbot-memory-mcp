@@ -201,7 +201,7 @@ public class EnhancedSearchTests
         var regularScore = await _relevanceScorer.CalculateRelevanceAsync(regularTurn, troubleshootingQuery);
 
         // Assert - The troubleshooting turn contains error keywords which should boost its score
-        Assert.True(troubleshootingScore.Score > regularScore.Score, 
+        Assert.True(troubleshootingScore.Score > regularScore.Score,
             $"Troubleshooting content (score: {troubleshootingScore.Score:F3}) should score higher than regular content (score: {regularScore.Score:F3}) for troubleshooting queries due to error keyword boost");
     }
 
@@ -237,11 +237,11 @@ public class EnhancedSearchTests
         var complexResult = await _queryParser.ParseQueryAsync(complexQuery, context);
 
         // Assert
-        Assert.True(complexResult.Complexity > simpleResult.Complexity, 
+        Assert.True(complexResult.Complexity > simpleResult.Complexity,
             "Complex query should have higher complexity score");
     }
 
-    [Fact] 
+    [Fact]
     public async Task RelevanceScorer_ConsidersModelMatch_InScoring()
     {
         // Arrange
@@ -258,7 +258,7 @@ public class EnhancedSearchTests
 
         var claudeTurn = new ConversationTurn
         {
-            ConversationId = "test-model-2", 
+            ConversationId = "test-model-2",
             TurnNumber = 1,
             UtcTimestamp = DateTime.UtcNow,
             Prompt = "Test prompt about machine learning",
@@ -270,7 +270,7 @@ public class EnhancedSearchTests
         var gptQuery = new ParsedQuery
         {
             OriginalQuery = "machine learning gpt",
-            ProcessedQuery = "machine learning gpt", 
+            ProcessedQuery = "machine learning gpt",
             Terms = new[] { "machine", "learning", "gpt" },
             Intent = SearchIntent.General,
             Interpretation = "General search",
@@ -282,7 +282,7 @@ public class EnhancedSearchTests
         var claudeScore = await _relevanceScorer.CalculateRelevanceAsync(claudeTurn, gptQuery);
 
         // Assert
-        Assert.True(gptScore.Score > claudeScore.Score, 
+        Assert.True(gptScore.Score > claudeScore.Score,
             "GPT turn should score higher for GPT-related query");
     }
 
@@ -306,7 +306,7 @@ public class EnhancedSearchTests
             ConversationId = "test-tools-2",
             TurnNumber = 1,
             UtcTimestamp = DateTime.UtcNow,
-            Prompt = "How to use debugger for testing", 
+            Prompt = "How to use debugger for testing",
             Response = "The debugger is essential for testing...",
             Model = "gpt-4",
             ToolsUsed = new[] { "calculator", "notepad" }

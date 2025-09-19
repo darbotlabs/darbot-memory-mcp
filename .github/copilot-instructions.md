@@ -1,5 +1,7 @@
 # GitHub Copilot Instructions for Darbot Memory MCP
 
+Always reference these instructions first and fallback to search or bash commands only when you encounter unexpected information that does not match the info here.
+
 ## Project Overview
 
 Darbot Memory MCP is an **enterprise-grade Model Context Protocol server** that provides persistent conversational audit trails. It captures every conversational turn—prompts, model responses, tool usage, and metadata—into tamper-evident Markdown files with cryptographic integrity verification.
@@ -12,298 +14,227 @@ Darbot Memory MCP is an **enterprise-grade Model Context Protocol server** that 
 - Browser history integration (optional)
 - Schema versioning for data evolution
 
-## Architecture
+## Working Effectively
 
-The solution follows a layered architecture pattern:
+### Bootstrap and Setup
+Run these commands in order for initial setup:
+- `pwsh ./scripts/bootstrap.ps1` -- takes ~47 seconds. NEVER CANCEL. Set timeout to 90+ minutes.
+  - Installs .NET tools (nbgv, dotnet-format, dotnet-outdated-tool)
+  - Sets up git hooks
+  - Restores NuGet packages
+  - Builds solution (Debug configuration)
+  - Runs all tests
+  - Creates version.json if needed
 
+### Build Commands
+- `dotnet restore` -- ~13 seconds for full restore. Set timeout to 30+ minutes.
+- `dotnet build --configuration Release` -- ~2.9 seconds (when restored). NEVER CANCEL. Set timeout to 60+ minutes.
+- `dotnet build --configuration Debug` -- similar timing to Release
+- Fresh builds from clean state take ~12-15 seconds
+
+### Testing
+- `dotnet test --configuration Release --verbosity normal` -- ~9.8 seconds, runs 51 tests. NEVER CANCEL. Set timeout to 30+ minutes.
+- `dotnet test --no-build --verbosity quiet` -- faster when already built
+- All tests must pass before committing
+
+### Pre-commit Validation
+- `pwsh ./scripts/pre-commit.ps1` -- ~20 seconds. NEVER CANCEL. Set timeout to 60+ minutes.
+  - Builds solution
+  - Checks code formatting (dotnet format --verify-no-changes)
+  - Runs static analysis
+  - Runs all tests
+  - Checks for TODO/FIXME comments (warns but doesn't fail)
+  - Checks for large files (>1MB)
+- `pwsh ./scripts/pre-commit.ps1 -Fix` -- auto-fixes formatting issues
+
+### Running the Application
+- `dotnet run --project src/Darbot.Memory.Mcp.Api` -- starts API on http://localhost:5093
+- Application starts in ~5 seconds
+- Access Swagger UI at: http://localhost:5093/swagger
+- Health endpoints: http://localhost:5093/health/live and http://localhost:5093/health/ready
+
+## Validation Scenarios
+
+### ALWAYS Manually Test These Scenarios After Making Changes
+
+#### 1. Basic Health Check
+```bash
+curl http://localhost:5093/health/ready
+# Expected: "Healthy"
+
+curl http://localhost:5093/info
+# Expected: JSON with endpoints and version info
+```
+
+#### 2. Conversation Storage and Retrieval
+```bash
+# Write a conversation turn (requires utcTimestamp)
+curl -X POST http://localhost:5093/v1/messages:write -H "Content-Type: application/json" -d '{
+  "conversationId": "test-validation-conv-001",
+  "turnNumber": 1,
+  "utcTimestamp": "2025-09-19T05:50:00Z",
+  "prompt": "Hello! Can you explain what Darbot Memory MCP does?",
+  "model": "test-model",
+  "response": "Darbot Memory MCP is an enterprise-grade Model Context Protocol server...",
+  "toolsUsed": ["conversation_storage", "documentation_lookup"]
+}'
+# Expected: {"success":true,"message":"Message persisted successfully"}
+
+# Verify file creation
+find . -name "*.md" -path "*/conversations/*" -exec ls -la {} \;
+# Expected: Shows created conversation file with timestamp and conversation ID
+```
+
+#### 3. Search Functionality  
+```bash
+curl -X GET "http://localhost:5093/v1/conversations:search?q=Darbot"
+# Expected: JSON response with search results
+```
+
+## Architecture and Project Structure
+
+### Solution Structure
 ```
 src/
-├── Darbot.Memory.Mcp.Api/          # Web API layer with controllers, health checks
-├── Darbot.Memory.Mcp.Core/         # Business logic, services, domain models
-├── Darbot.Memory.Mcp.Storage/      # Data access layer, storage providers
-└── Darbot.Memory.Mcp.Tests/        # Unit and integration tests
+├── Darbot.Memory.Mcp.Api/          # Web API layer - controllers, health checks, authentication
+├── Darbot.Memory.Mcp.Core/         # Business logic - services, domain models, search
+├── Darbot.Memory.Mcp.Storage/      # Data access - storage providers (FileSystem, Git, Azure)
+└── Darbot.Memory.Mcp.Tests/        # Unit and integration tests (51 total tests)
 ```
 
-### Core Components
-- **API Layer**: ASP.NET Core Web API with OpenAPI/Swagger
-- **Core Layer**: Business services, domain models, search functionality
-- **Storage Layer**: Pluggable storage providers (FileSystem, Git, Azure Blob)
-- **Health Monitoring**: Liveness and readiness probes
+### Key Entry Points
+- `src/Darbot.Memory.Mcp.Api/Program.cs` -- Application startup and DI configuration
+- `src/Darbot.Memory.Mcp.Core/Services/ConversationService.cs` -- Main business logic
+- `src/Darbot.Memory.Mcp.Storage/Providers/` -- Storage implementations
+- `src/Darbot.Memory.Mcp.Tests/` -- Test files, especially SearchFunctionalityTests.cs
 
-## Development Guidelines
+### Configuration Files
+- `src/Darbot.Memory.Mcp.Api/appsettings.json` -- Main configuration
+- `src/Darbot.Memory.Mcp.Api/appsettings.Development.json` -- Development overrides
+- `version.json` -- NerdBank GitVersioning configuration
+- `scripts/bootstrap.ps1` -- Development environment setup
+- `scripts/pre-commit.ps1` -- Pre-commit validation
 
-### Code Style and Conventions
+## Known Issues and Gotchas
 
-1. **C# Conventions**:
-   - Follow Microsoft C# coding conventions
-   - Use PascalCase for public members, camelCase for private fields
-   - Prefer `var` for obvious types, explicit types for clarity
-   - Use meaningful names that describe intent
+### Build Warnings (Expected)
+The build produces 16 warnings related to async methods without await operators in search functionality:
+- `/Search/RelevanceScorer.cs` -- CS1998 warnings on lines 25, 365, 396, 415
+- `/Search/EnhancedSearchService.cs` -- CS1998 warnings on lines 311, 341, 373, 406, 487
+- `/Search/ConversationContextManager.cs` -- CS1998 warnings on lines 114, 151, 207, 251, 293
+- `/Search/QueryParser.cs` -- CS1998 warning on line 20
+- `/Search/RelevanceScorer.cs` -- CS0414 warning on line 15 (unused field)
 
-2. **Async/Await Patterns**:
-   - Always use async/await for I/O operations
-   - Suffix async methods with `Async`
-   - Use `ConfigureAwait(false)` in library code
-   - Handle async method warnings (CS1998) appropriately
+These are expected and should not be "fixed" as they represent future async extension points.
 
-3. **Dependency Injection**:
-   - Register services in `Program.cs` using extension methods
-   - Prefer constructor injection over service locator pattern
-   - Use interfaces for testability and loose coupling
+### Version Tool Issues
+The `nbgv` tool fails in shallow clones with "Shallow clone lacks the objects required to calculate version height" error. This is expected in CI/PR environments and does not affect functionality.
 
-4. **Error Handling**:
-   - Use structured logging with Serilog
-   - Throw specific exceptions, not generic ones
-   - Include context in error messages
-   - Use `IResult` pattern for API responses
+### API Requirements
+- All conversation turns MUST include a valid `utcTimestamp` in ISO 8601 format
+- Content-Type must be `application/json` for POST requests
+- The API uses file-based storage by default in `./src/Darbot.Memory.Mcp.Api/data/conversations/`
 
-### Project Structure Patterns
+## Common Development Tasks
 
-#### Controllers
-- Keep controllers thin, delegate to services
-- Use action filters for cross-cutting concerns
-- Follow REST conventions for endpoints
-- Use DTOs for request/response models
+### Adding New Features
+1. Always run `pwsh ./scripts/bootstrap.ps1` first if working in a fresh clone
+2. Make minimal changes following the existing patterns
+3. Add corresponding unit tests in the Tests project
+4. Run `dotnet test` to ensure all tests pass
+5. Run `pwsh ./scripts/pre-commit.ps1 -Fix` to format code and validate
+6. Test manually using the validation scenarios above
+7. Always validate that the API starts and responds to health checks
 
-#### Services
-- Implement business logic in service classes
+### Debugging Issues
+1. Check application logs in `./logs/darbot-memory-mcp-*.txt`
+2. Verify conversation files are created in `./src/Darbot.Memory.Mcp.Api/data/conversations/`
+3. Use Swagger UI at http://localhost:5093/swagger for API exploration
+4. Check health endpoints for storage provider status
+
+### CI/CD Pipeline Compatibility
+The project uses GitHub Actions with:
+- .NET 8.0 SDK requirement
+- PowerShell 7.x for scripts
+- Docker support via included Dockerfile
+- Code formatting checks with `dotnet format --verify-no-changes`
+- Full test suite execution
+
+## Dependencies and Tools
+
+### Required Tools
+- .NET 8.0 SDK (minimum requirement)
+- PowerShell 7.x (for scripts)
+- Git (for version control and GitVersioning)
+
+### Auto-installed Tools (via bootstrap script)
+- `nbgv` (NerdBank GitVersioning)
+- `dotnet-format` (code formatting)
+- `dotnet-outdated-tool` (dependency analysis)
+
+### Key NuGet Packages
+- ASP.NET Core 8.0 (web framework)
+- Serilog (structured logging)
+- xUnit (testing framework)
+- Microsoft.Extensions.* (configuration, DI, health checks)
+- Azure SDK (for blob storage provider)
+
+## Performance Expectations
+
+All timing measurements from validation on Linux environment:
+- Bootstrap (cold start): ~47 seconds
+- Package restore: ~13 seconds
+- Build (Release): ~2.9 seconds (when packages restored)
+- Test suite (51 tests): ~9.8 seconds
+- Pre-commit checks: ~20 seconds
+- Application startup: ~5 seconds
+- API response time: <100ms for simple operations
+
+Set timeouts generously to account for varying system performance:
+- Build operations: 60+ minutes timeout
+- Test operations: 30+ minutes timeout
+- Bootstrap: 90+ minutes timeout
+
+## Security and Data Integrity
+
+### File Storage
+- All conversation files include SHA256 hashes for tamper detection
+- Files are created with specific naming convention: `YYYYMMDD-HHMMSS_conversationId_turnNumber.md`
+- Header metadata acts as tamper-evident seal
+
+### Authentication
+- Supports None, ApiKey, and AzureAD authentication modes
+- Default configuration uses None for development
+- Production deployments should configure appropriate auth mode
+
+### Logging
+- Structured logging via Serilog
+- Separate log levels for Development vs Production
+- Log files rotate daily
+- Avoid logging sensitive conversation content
+
+## Development Guidelines Summary
+
+Follow these key principles when working with the codebase:
+
+### Code Standards
+- Follow Microsoft C# coding conventions
+- Use meaningful names and include XML documentation for public APIs
 - Use dependency injection for testability
-- Follow single responsibility principle
-- Return domain models, not DTOs
+- Include unit tests for all new functionality (currently 51 tests)
+- Use Serilog for structured logging
 
-#### Storage Providers
-- Implement `IConversationStorageProvider` interface
-- Support batch operations for performance
-- Include health check implementations
-- Handle storage-specific exceptions gracefully
-
-#### Models
+### Pattern Guidelines
+- Controllers should be thin, delegate to services
+- Implement storage providers using `IConversationStorageProvider` interface
 - Use record types for DTOs and value objects
-- Include validation attributes where appropriate
-- Implement `IEquatable<T>` for value semantics
-- Use nullable reference types consistently
+- Follow async/await patterns consistently
+- Handle the expected CS1998 warnings in search functionality (these are intentional)
 
-### Testing Requirements
+### Configuration
+- Main config: `src/Darbot.Memory.Mcp.Api/appsettings.json`
+- Environment variables use `DARBOT__` prefix with double underscores for nesting
+- Storage providers: FileSystem (default), Git, AzureBlob
+- Authentication modes: None (default), ApiKey, AzureAD
 
-#### Unit Tests
-- Test all public methods and edge cases
-- Use xUnit as the testing framework
-- Mock external dependencies using Moq
-- Follow AAA pattern (Arrange, Act, Assert)
-- Aim for >90% code coverage on core logic
-
-#### Integration Tests
-- Test API endpoints end-to-end
-- Use `TestServer` for in-memory testing
-- Test storage provider implementations
-- Include health check endpoints
-
-#### Test Organization
-```csharp
-// Example test class structure
-public class ConversationServiceTests
-{
-    private readonly Mock<IConversationStorageProvider> _mockStorage;
-    private readonly ConversationService _service;
-
-    public ConversationServiceTests()
-    {
-        _mockStorage = new Mock<IConversationStorageProvider>();
-        _service = new ConversationService(_mockStorage.Object);
-    }
-
-    [Fact]
-    public async Task WriteConversationTurn_ValidInput_ReturnsSuccess()
-    {
-        // Arrange
-        var turn = new ConversationTurn { /* test data */ };
-        
-        // Act
-        var result = await _service.WriteConversationTurnAsync(turn);
-        
-        // Assert
-        result.Should().NotBeNull();
-        _mockStorage.Verify(/* verification */);
-    }
-}
-```
-
-### Configuration Management
-
-#### appsettings.json Structure
-```json
-{
-  "Darbot": {
-    "Storage": {
-      "Provider": "FileSystem|Git|AzureBlob",
-      "FileSystem": { "RootPath": "./conversations" },
-      "Git": { "RepositoryPath": "./conversations", "AutoCommit": true },
-      "AzureBlob": { "ConnectionString": "", "ContainerName": "conversations" }
-    },
-    "Auth": {
-      "Mode": "None|ApiKey|AzureAD"
-    },
-    "BrowserHistory": {
-      "Enabled": false
-    }
-  }
-}
-```
-
-#### Environment Variables
-- Prefix all environment variables with `DARBOT__`
-- Use double underscores (`__`) for nested configuration
-- Support multiple deployment environments
-
-### API Design Patterns
-
-#### Endpoint Conventions
-- Use versioned routes: `/v1/messages:write`
-- Follow MCP protocol specifications
-- Use HTTP methods appropriately (POST for commands, GET for queries)
-- Return consistent response formats
-
-#### Response Models
-```csharp
-public record ApiResponse<T>
-{
-    public bool Success { get; init; }
-    public T? Data { get; init; }
-    public string? Error { get; init; }
-    public string? RequestId { get; init; }
-}
-```
-
-#### Health Checks
-- Implement both liveness (`/health/live`) and readiness (`/health/ready`) probes
-- Include storage provider health in readiness checks
-- Return detailed information in development mode
-
-### Security Considerations
-
-1. **Authentication & Authorization**:
-   - Support API key and Azure AD authentication
-   - Use minimal required permissions
-   - Validate all inputs
-
-2. **Data Integrity**:
-   - Generate SHA256 hashes for all conversation files
-   - Store hashes in file metadata
-   - Verify integrity on read operations
-
-3. **Sensitive Data**:
-   - Never log sensitive conversation content
-   - Use structured logging to avoid accidental exposure
-   - Implement data retention policies
-
-### Build and Deployment
-
-#### Local Development
-```bash
-# Restore packages
-dotnet restore
-
-# Build solution
-dotnet build --configuration Release
-
-# Run tests
-dotnet test --verbosity normal
-
-# Run API locally
-dotnet run --project src/Darbot.Memory.Mcp.Api
-```
-
-#### Docker Deployment
-- Use multi-stage Dockerfile for optimized images
-- Set appropriate health check intervals
-- Configure persistent volumes for data storage
-
-#### CI/CD Pipeline
-- Run linting with `dotnet format --verify-no-changes`
-- Execute all tests with coverage reporting
-- Build and push container images on successful tests
-- Deploy to test/production environments
-
-### Storage Provider Implementation
-
-When implementing new storage providers:
-
-1. **Interface Implementation**:
-   ```csharp
-   public class MyStorageProvider : IConversationStorageProvider
-   {
-       public async Task<ConversationTurn> WriteConversationTurnAsync(ConversationTurn turn)
-       {
-           // Implementation with proper error handling
-       }
-       
-       public async Task<IEnumerable<ConversationTurn>> SearchConversationsAsync(SearchRequest request)
-       {
-           // Implementation with filtering and pagination
-       }
-   }
-   ```
-
-2. **Health Check Support**:
-   - Implement `IHealthCheck` interface
-   - Test connectivity and basic operations
-   - Return meaningful error messages
-
-3. **Configuration**:
-   - Add configuration section for new provider
-   - Support environment variable overrides
-   - Include connection string validation
-
-### Logging and Monitoring
-
-#### Structured Logging
-```csharp
-_logger.LogInformation("Conversation turn persisted",
-    new { ConversationId = turn.ConversationId, TurnNumber = turn.TurnNumber });
-```
-
-#### Key Metrics to Log
-- Conversation persistence operations
-- Search query performance
-- Storage provider health status
-- Authentication events
-- Error rates and types
-
-### Common Patterns to Follow
-
-1. **Repository Pattern**: Use for data access abstraction
-2. **Options Pattern**: For configuration management
-3. **Result Pattern**: For operation outcomes with error details
-4. **Factory Pattern**: For storage provider instantiation
-5. **Strategy Pattern**: For different storage implementations
-
-### Code Generation Guidelines
-
-When generating new code:
-
-1. **Follow existing patterns** in the codebase
-2. **Include appropriate error handling** and logging
-3. **Add corresponding unit tests** for new functionality
-4. **Update documentation** when adding new features
-5. **Consider performance implications** of new code
-6. **Validate input parameters** and return meaningful errors
-7. **Use dependency injection** for external dependencies
-8. **Include XML documentation** for public APIs
-
-### Performance Considerations
-
-- Use asynchronous operations for I/O-bound work
-- Implement pagination for large result sets
-- Consider caching for frequently accessed data
-- Monitor memory usage with large conversation histories
-- Use connection pooling for database operations
-
-### Troubleshooting Common Issues
-
-1. **Async method warnings (CS1998)**: Either add await operations or remove async
-2. **Storage provider failures**: Check connection strings and permissions
-3. **Health check failures**: Verify storage provider connectivity
-4. **High memory usage**: Review conversation batch sizes and caching
-5. **Slow search performance**: Consider indexing strategies
-
-This project prioritizes data integrity, performance, and enterprise-grade reliability. Always consider these aspects when implementing new features or making changes.
+Always prioritize data integrity, performance, and enterprise-grade reliability when implementing new features or making changes.

@@ -31,8 +31,8 @@ public class FileSystemStorageProvider : IStorageProvider
     {
         var config = options.Value;
         // Use the configured root path or fall back to storage.filesystem.rootpath for backward compatibility
-        var basePath = !string.IsNullOrEmpty(config.Storage.BasePath) 
-            ? config.Storage.BasePath 
+        var basePath = !string.IsNullOrEmpty(config.Storage.BasePath)
+            ? config.Storage.BasePath
             : config.Storage.FileSystem.RootPath;
         _conversationsPath = Path.Combine(basePath, "conversations");
         _formatter = formatter;
@@ -480,7 +480,7 @@ public class FileSystemStorageProvider : IStorageProvider
         // Filter by tools used
         if (request.ToolsUsed.Any())
         {
-            if (!request.ToolsUsed.Any(tool => conversation.ToolsUsed.Any(used => 
+            if (!request.ToolsUsed.Any(tool => conversation.ToolsUsed.Any(used =>
                 used.Contains(tool, StringComparison.OrdinalIgnoreCase))))
             {
                 return false;

@@ -94,13 +94,13 @@ builder.Services.AddSingleton<IWorkspaceStorageProvider>(sp =>
     var formatter = sp.GetRequiredService<IConversationFormatter>();
     var options = sp.GetRequiredService<IOptions<DarbotConfiguration>>();
     var pluginRegistry = sp.GetRequiredService<IPluginRegistry>();
-    
+
     // Register all available plugins with the registry
     foreach (var plugin in sp.GetServices<IMemoryPlugin>())
     {
         pluginRegistry.RegisterPlugin(plugin);
     }
-    
+
     return config.Storage.Provider.ToLowerInvariant() switch
     {
         "git" => throw new NotImplementedException("Git workspace provider not yet implemented"),
@@ -258,7 +258,7 @@ app.MapGet("/v1/conversations/{conversationId}", async (
     logger.LogInformation("Received get conversation request for {ConversationId}", conversationId);
 
     var result = await conversationService.GetConversationAsync(conversationId);
-    
+
     if (!result.Any())
     {
         return Results.NotFound(new { Message = $"Conversation {conversationId} not found" });
@@ -281,7 +281,7 @@ app.MapGet("/v1/conversations/{conversationId}/turns/{turnNumber:int}", async (
     logger.LogInformation("Received get conversation turn request for {ConversationId}:{TurnNumber}", conversationId, turnNumber);
 
     var result = await conversationService.GetConversationTurnAsync(conversationId, turnNumber);
-    
+
     if (result == null)
     {
         return Results.NotFound(new { Message = $"Conversation turn {conversationId}:{turnNumber} not found" });
@@ -306,7 +306,7 @@ if (config.BrowserHistory.Enabled)
         logger.LogInformation("Received browser history sync request");
 
         var result = await browserHistoryService.SyncBrowserHistoryAsync(request);
-        
+
         return result.Success
             ? Results.Ok(result)
             : Results.BadRequest(result);
@@ -358,7 +358,7 @@ app.MapPost("/v1/workspaces:capture", async (
     logger.LogInformation("Received workspace capture request: {WorkspaceName}", request.Name);
 
     var result = await workspaceService.CaptureWorkspaceAsync(request);
-    
+
     return result.Success
         ? Results.Ok(result)
         : Results.BadRequest(result);
@@ -377,7 +377,7 @@ app.MapPost("/v1/workspaces:restore", async (
     logger.LogInformation("Received workspace restore request: {WorkspaceId}", request.WorkspaceId);
 
     var result = await workspaceService.RestoreWorkspaceAsync(request);
-    
+
     return result.Success
         ? Results.Ok(result)
         : Results.BadRequest(result);
@@ -412,7 +412,7 @@ app.MapGet("/v1/workspaces/{workspaceId}", async (
     logger.LogInformation("Received get workspace request: {WorkspaceId}", workspaceId);
 
     var result = await workspaceService.GetWorkspaceAsync(workspaceId);
-    
+
     if (result == null)
     {
         return Results.NotFound(new { Message = $"Workspace {workspaceId} not found" });
@@ -434,7 +434,7 @@ app.MapDelete("/v1/workspaces/{workspaceId}", async (
     logger.LogInformation("Received delete workspace request: {WorkspaceId}", workspaceId);
 
     var result = await workspaceService.DeleteWorkspaceAsync(workspaceId);
-    
+
     return result
         ? Results.Ok(new { Success = true, Message = "Workspace deleted successfully" })
         : Results.NotFound(new { Success = false, Message = $"Workspace {workspaceId} not found or could not be deleted" });

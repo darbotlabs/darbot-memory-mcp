@@ -36,7 +36,7 @@ public class SearchFunctionalityTests : IDisposable
 
         var options = Options.Create(config);
         var logger = Mock.Of<ILogger<FileSystemStorageProvider>>();
-        
+
         _formatter = new ConversationFormatter();
         _hashCalculator = new HashCalculator();
         _storageProvider = new FileSystemStorageProvider(options, _formatter, logger);
@@ -113,7 +113,7 @@ public class SearchFunctionalityTests : IDisposable
 
         // Assert
         Assert.True(result.Results.Count >= 2);
-        Assert.All(result.Results, r => 
+        Assert.All(result.Results, r =>
             Assert.True(r.Prompt.Contains("Python", StringComparison.OrdinalIgnoreCase) ||
                        r.Response.Contains("Python", StringComparison.OrdinalIgnoreCase)));
     }
@@ -224,7 +224,7 @@ public class SearchFunctionalityTests : IDisposable
 
         // Assert
         Assert.Equal(3, result.Conversations.Count); // 3 unique conversations
-        
+
         var conv1 = result.Conversations.FirstOrDefault(c => c.ConversationId == "test-conv-1");
         Assert.NotNull(conv1);
         Assert.Equal(2, conv1.TurnCount);

@@ -73,7 +73,7 @@ public class WorkspaceTests : IDisposable
         var registry = new PluginRegistry(_pluginLoggerMock.Object);
         var oneNotePlugin = new OneNotePlugin(_oneNoteLoggerMock.Object);
         var githubPlugin = new GitHubPlugin(_githubLoggerMock.Object);
-        
+
         registry.RegisterPlugin(oneNotePlugin);
         registry.RegisterPlugin(githubPlugin);
 
@@ -99,7 +99,7 @@ public class WorkspaceTests : IDisposable
         Assert.Equal("OneNote", result.Type);
         Assert.NotNull(result.Data);
         Assert.True(result.Metadata.ContainsKey("Count"));
-        
+
         // Verify the data is actually OneNote notebooks
         Assert.IsAssignableFrom<IReadOnlyList<OneNoteNotebook>>(result.Data);
         var notebooks = (IReadOnlyList<OneNoteNotebook>)result.Data;
@@ -121,7 +121,7 @@ public class WorkspaceTests : IDisposable
         Assert.NotNull(result.Data);
         Assert.True(result.Metadata.ContainsKey("Count"));
         Assert.NotEmpty(result.Links);
-        
+
         // Verify the data is actually GitHub repositories
         Assert.IsAssignableFrom<IReadOnlyList<GitHubRepository>>(result.Data);
         var repos = (IReadOnlyList<GitHubRepository>)result.Data;
@@ -136,7 +136,7 @@ public class WorkspaceTests : IDisposable
         var registry = new PluginRegistry(_pluginLoggerMock.Object);
         registry.RegisterPlugin(new OneNotePlugin(_oneNoteLoggerMock.Object));
         registry.RegisterPlugin(new GitHubPlugin(_githubLoggerMock.Object));
-        
+
         var provider = new WorkspaceFileSystemStorageProvider(
             _configOptions, _formatterMock.Object, _storageLoggerMock.Object, registry);
 
@@ -157,13 +157,13 @@ public class WorkspaceTests : IDisposable
         Assert.NotNull(workspace.BrowserState);
         Assert.NotNull(workspace.ApplicationState);
         Assert.NotNull(workspace.Conversations);
-        
+
         // Verify device info is captured
         Assert.Equal(Environment.MachineName, workspace.Device.DeviceName);
         Assert.Equal(Environment.UserName, workspace.Device.UserName);
-        
+
         // Verify some data is captured from plugins
-        Assert.True(workspace.ApplicationState.OneNoteNotebooks.Count > 0 || 
+        Assert.True(workspace.ApplicationState.OneNoteNotebooks.Count > 0 ||
                    workspace.ApplicationState.GitHubRepos.Count > 0);
     }
 
@@ -263,7 +263,7 @@ public class WorkspaceTests : IDisposable
             Name = "List Test Workspace",
             Options = new CaptureOptions()
         };
-        
+
         await service.CaptureWorkspaceAsync(captureRequest);
 
         var listRequest = new ListWorkspacesRequest

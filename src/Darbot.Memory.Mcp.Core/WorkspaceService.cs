@@ -31,7 +31,7 @@ public class WorkspaceService : IWorkspaceService
         try
         {
             var workspace = await _storageProvider.CaptureCurrentWorkspaceAsync(request.Options, cancellationToken);
-            
+
             // Override the name from the request
             workspace = workspace with { Name = request.Name };
 
@@ -40,7 +40,7 @@ public class WorkspaceService : IWorkspaceService
             if (success)
             {
                 _logger.LogInformation("Successfully captured workspace: {WorkspaceId}", workspace.WorkspaceId);
-                
+
                 return new CaptureWorkspaceResponse
                 {
                     Success = true,
@@ -67,7 +67,7 @@ public class WorkspaceService : IWorkspaceService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during workspace capture: {WorkspaceName}", request.Name);
-            
+
             return new CaptureWorkspaceResponse
             {
                 Success = false,
@@ -91,7 +91,7 @@ public class WorkspaceService : IWorkspaceService
             if (success)
             {
                 _logger.LogInformation("Successfully restored workspace: {WorkspaceId}", request.WorkspaceId);
-                
+
                 return new RestoreWorkspaceResponse
                 {
                     Success = true,
@@ -118,7 +118,7 @@ public class WorkspaceService : IWorkspaceService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during workspace restore: {WorkspaceId}", request.WorkspaceId);
-            
+
             return new RestoreWorkspaceResponse
             {
                 Success = false,
@@ -142,7 +142,7 @@ public class WorkspaceService : IWorkspaceService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during workspace listing");
-            
+
             return new ListWorkspacesResponse
             {
                 Workspaces = Array.Empty<WorkspaceSummary>().AsReadOnly(),
