@@ -24,13 +24,13 @@ public class QueryParser : IQueryParser
 
         // Detect query intent
         var intent = DetectIntent(normalizedQuery);
-        
+
         // Extract search terms
         var terms = ExtractSearchTerms(normalizedQuery);
-        
+
         // Process query based on intent
         var processedQuery = ProcessQueryByIntent(normalizedQuery, intent);
-        
+
         // Calculate complexity
         var complexity = CalculateComplexity(normalizedQuery, terms);
 
@@ -44,7 +44,7 @@ public class QueryParser : IQueryParser
             Complexity = complexity
         };
 
-        _logger.LogDebug("Query parsed: Intent={Intent}, Terms={Terms}, Complexity={Complexity}", 
+        _logger.LogDebug("Query parsed: Intent={Intent}, Terms={Terms}, Complexity={Complexity}",
             intent, string.Join(", ", terms), complexity);
 
         return parsedQuery;
@@ -95,7 +95,7 @@ public class QueryParser : IQueryParser
         {
             if (pattern.Pattern.IsMatch(query))
             {
-                _logger.LogDebug("Detected intent: {Intent} with confidence {Confidence}", 
+                _logger.LogDebug("Detected intent: {Intent} with confidence {Confidence}",
                     pattern.Intent, pattern.Confidence);
                 return pattern.Intent;
             }

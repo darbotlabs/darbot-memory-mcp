@@ -58,7 +58,7 @@ public class GitStorageProvider : IStorageProvider
 
             // Git operations
             await ExecuteGitCommandAsync("add", fileName);
-            
+
             if (_config.AutoCommit)
             {
                 var commitMessage = $"Add conversation turn {turn.ConversationId}:{turn.TurnNumber}";
@@ -404,7 +404,7 @@ public class GitStorageProvider : IStorageProvider
 
             // Try a simple Git command
             var result = await ExecuteGitCommandAsync("status", "--porcelain");
-            
+
             // Try to write a test file
             var testFile = Path.Combine(_workingDirectory, ".health-check");
             await File.WriteAllTextAsync(testFile, "health-check", cancellationToken);
@@ -603,7 +603,7 @@ public class GitStorageProvider : IStorageProvider
         // Filter by tools used
         if (request.ToolsUsed.Any())
         {
-            if (!request.ToolsUsed.Any(tool => conversation.ToolsUsed.Any(used => 
+            if (!request.ToolsUsed.Any(tool => conversation.ToolsUsed.Any(used =>
                 used.Contains(tool, StringComparison.OrdinalIgnoreCase))))
             {
                 return false;

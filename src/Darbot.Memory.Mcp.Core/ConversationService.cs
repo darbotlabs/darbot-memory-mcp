@@ -121,7 +121,7 @@ public class ConversationService : IConversationService
     {
         try
         {
-            _logger.LogInformation("Searching conversations with criteria: {Criteria}", 
+            _logger.LogInformation("Searching conversations with criteria: {Criteria}",
                 System.Text.Json.JsonSerializer.Serialize(request));
 
             var result = await _storageProvider.SearchConversationsAsync(request, cancellationToken);
@@ -206,7 +206,7 @@ public class ConversationService : IConversationService
 
             var result = await _storageProvider.GetConversationAsync(conversationId, cancellationToken);
 
-            _logger.LogInformation("Successfully retrieved conversation {ConversationId} with {TurnCount} turns", 
+            _logger.LogInformation("Successfully retrieved conversation {ConversationId} with {TurnCount} turns",
                 conversationId, result.Count);
 
             return result;

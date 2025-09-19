@@ -31,7 +31,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
         _workspacesPath = Path.Combine(options.Value.Storage.FileSystem.RootPath, "workspaces");
         _pluginRegistry = pluginRegistry;
         _logger = logger;
-        
+
         _jsonOptions = new JsonSerializerOptions
         {
             WriteIndented = true,
@@ -46,7 +46,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
     public async Task<WorkspaceContext> CaptureCurrentWorkspaceAsync(CaptureOptions options, CancellationToken cancellationToken = default)
     {
         var workspaceId = $"ws-{Guid.NewGuid()}";
-        
+
         var deviceInfo = await CaptureDeviceInfoAsync(cancellationToken);
         var browserState = await CaptureBrowserStateAsync(cancellationToken);
         var applicationState = await CaptureApplicationStateAsync(cancellationToken);
@@ -73,14 +73,14 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
         {
             var workspaceFile = Path.Combine(_workspacesPath, $"{workspace.WorkspaceId}.json");
             var workspaceJson = JsonSerializer.Serialize(workspace, _jsonOptions);
-            
+
             await File.WriteAllTextAsync(workspaceFile, workspaceJson, cancellationToken);
-            
+
             // Also create a markdown summary for human readability
             var markdownFile = Path.Combine(_workspacesPath, $"{workspace.WorkspaceId}.md");
             var markdown = GenerateWorkspaceMarkdown(workspace);
             await File.WriteAllTextAsync(markdownFile, markdown, cancellationToken);
-            
+
             return true;
         }
         catch (Exception ex)
@@ -103,7 +103,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
 
             // In a real implementation, this would actually restore the workspace state
             // For now, we'll just log the restoration attempt
-            _logger.LogInformation("Simulating workspace restoration: {WorkspaceId} with mode {Mode}", 
+            _logger.LogInformation("Simulating workspace restoration: {WorkspaceId} with mode {Mode}",
                 workspaceId, options.Mode);
 
             await Task.Delay(100, cancellationToken); // Simulate restoration work
@@ -152,7 +152,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
                 {
                     var json = await File.ReadAllTextAsync(file, cancellationToken);
                     var workspace = JsonSerializer.Deserialize<WorkspaceContext>(json, _jsonOptions);
-                    
+
                     if (workspace != null)
                     {
                         var summary = new WorkspaceSummary
@@ -166,7 +166,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
                             BrowserTabCount = workspace.BrowserState.OpenTabs.Count,
                             ApplicationCount = workspace.ApplicationState.RunningApps.Count
                         };
-                        
+
                         summaries.Add(summary);
                     }
                 }
@@ -236,7 +236,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
     {
         // Simulate browser state capture
         await Task.Delay(50, cancellationToken);
-        
+
         return new BrowserState
         {
             Profiles = new List<BrowserProfile>
@@ -282,7 +282,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
         // Use plugins if available
         var oneNoteNotebooks = await CaptureOneNoteDataAsync(cancellationToken);
         var gitHubRepos = await CaptureGitHubDataAsync(cancellationToken);
-        
+
         return new ApplicationState
         {
             OneNoteNotebooks = oneNoteNotebooks,
@@ -303,7 +303,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
     private async Task<DeviceInfo> CaptureDeviceInfoAsync(CancellationToken cancellationToken)
     {
         await Task.Delay(10, cancellationToken);
-        
+
         return new DeviceInfo
         {
             DeviceId = Environment.MachineName,
@@ -319,7 +319,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
         TimeSpan historyWindow, CancellationToken cancellationToken)
     {
         await Task.Delay(20, cancellationToken);
-        
+
         // In a real implementation, this would scan the conversations directory
         // For now, return empty list
         return Array.Empty<ConversationReference>().AsReadOnly();
@@ -346,7 +346,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
                 }
             }
         }
-        
+
         return Array.Empty<OneNoteNotebook>().AsReadOnly();
     }
 
@@ -371,7 +371,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
                 }
             }
         }
-        
+
         return Array.Empty<GitHubRepository>().AsReadOnly();
     }
 
@@ -430,7 +430,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
     private static string GetBrowserProfilePath()
     {
         // Return a simulated browser profile path
-        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows) 
+        return RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
             ? @"C:\Users\Default\AppData\Local\Microsoft\Edge\User Data\Default"
             : "/home/user/.config/microsoft-edge/Default";
     }
@@ -461,7 +461,7 @@ public class WorkspaceFileSystemStorageProvider : FileSystemStorageProvider, IWo
     {
         return request.SortBy.ToLowerInvariant() switch
         {
-            "created" => request.SortDescending 
+            "created" => request.SortDescending
                 ? workspaces.OrderByDescending(w => w.CreatedUtc)
                 : workspaces.OrderBy(w => w.CreatedUtc),
             "name" => request.SortDescending

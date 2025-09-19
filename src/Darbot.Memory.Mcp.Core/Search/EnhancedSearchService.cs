@@ -34,10 +34,10 @@ public class EnhancedSearchService : IEnhancedSearchService
     public async Task<EnhancedSearchResponse> SearchAsync(EnhancedSearchRequest request, CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
-        
+
         try
         {
-            _logger.LogInformation("Enhanced search started for query: {Query}, mode: {Mode}", 
+            _logger.LogInformation("Enhanced search started for query: {Query}, mode: {Mode}",
                 request.Query, request.Mode);
 
             // Parse the query using AI-native query understanding
@@ -54,7 +54,7 @@ public class EnhancedSearchService : IEnhancedSearchService
             var scoredResults = await ScoreAndRankResults(searchResponse.Results, parsedQuery, request, cancellationToken);
 
             // Generate suggestions if requested
-            var suggestions = request.IncludeSuggestions 
+            var suggestions = request.IncludeSuggestions
                 ? await GenerateSuggestions(request.Query, parsedQuery, cancellationToken)
                 : Array.Empty<SearchSuggestion>();
 
@@ -78,7 +78,7 @@ public class EnhancedSearchService : IEnhancedSearchService
                 }
             };
 
-            _logger.LogInformation("Enhanced search completed: {ResultCount} results in {SearchTime}ms", 
+            _logger.LogInformation("Enhanced search completed: {ResultCount} results in {SearchTime}ms",
                 scoredResults.Count, stopwatch.ElapsedMilliseconds);
 
             return response;
@@ -86,7 +86,7 @@ public class EnhancedSearchService : IEnhancedSearchService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Enhanced search failed for query: {Query}", request.Query);
-            
+
             // Fallback to basic search
             return await FallbackToBasicSearch(request, cancellationToken);
         }
@@ -95,7 +95,7 @@ public class EnhancedSearchService : IEnhancedSearchService
     public async Task<SearchSuggestionsResponse> GetSuggestionsAsync(string query, CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
-        
+
         try
         {
             _logger.LogDebug("Generating suggestions for query: {Query}", query);
@@ -137,7 +137,7 @@ public class EnhancedSearchService : IEnhancedSearchService
     {
         try
         {
-            _logger.LogDebug("Recording search interaction: {Type} for query: {Query}", 
+            _logger.LogDebug("Recording search interaction: {Type} for query: {Query}",
                 interaction.Type, interaction.Query);
 
             // Store interaction for learning (this would typically go to a separate analytics store)
@@ -154,7 +154,7 @@ public class EnhancedSearchService : IEnhancedSearchService
     public async Task<RelatedConversationsResponse> GetRelatedConversationsAsync(string conversationId, CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
-        
+
         try
         {
             _logger.LogDebug("Finding related conversations for: {ConversationId}", conversationId);
@@ -210,8 +210,8 @@ public class EnhancedSearchService : IEnhancedSearchService
     }
 
     private async Task<IReadOnlyList<ScoredConversationTurn>> ScoreAndRankResults(
-        IReadOnlyList<ConversationTurn> results, 
-        ParsedQuery parsedQuery, 
+        IReadOnlyList<ConversationTurn> results,
+        ParsedQuery parsedQuery,
         EnhancedSearchRequest request,
         CancellationToken cancellationToken)
     {
@@ -290,8 +290,8 @@ public class EnhancedSearchService : IEnhancedSearchService
     }
 
     private async Task<IReadOnlyList<SearchSuggestion>> GenerateSuggestions(
-        string originalQuery, 
-        ParsedQuery parsedQuery, 
+        string originalQuery,
+        ParsedQuery parsedQuery,
         CancellationToken cancellationToken)
     {
         var suggestions = new List<SearchSuggestion>();
@@ -314,7 +314,7 @@ public class EnhancedSearchService : IEnhancedSearchService
 
         // Simple query expansion based on common patterns
         var words = query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        
+
         if (words.Length == 1)
         {
             // Single word - suggest adding context
@@ -444,7 +444,7 @@ public class EnhancedSearchService : IEnhancedSearchService
     }
 
     private async Task<IReadOnlyList<RelatedConversation>> FindSimilarConversations(
-        IReadOnlyList<ConversationTurn> targetConversation, 
+        IReadOnlyList<ConversationTurn> targetConversation,
         CancellationToken cancellationToken)
     {
         var relatedConversations = new List<RelatedConversation>();
@@ -464,7 +464,7 @@ public class EnhancedSearchService : IEnhancedSearchService
                 continue; // Skip self
 
             var similarity = await CalculateConversationSimilarity(targetConversation, conversation, cancellationToken);
-            
+
             if (similarity.Score > 0.3) // Threshold for relevance
             {
                 relatedConversations.Add(new RelatedConversation
@@ -495,7 +495,7 @@ public class EnhancedSearchService : IEnhancedSearchService
         var targetTools = targetConversation.SelectMany(t => t.ToolsUsed).Distinct().ToList();
         var candidateTools = candidate.ToolsUsed.ToList();
         var commonTools = targetTools.Intersect(candidateTools).ToList();
-        
+
         if (targetTools.Any() && candidateTools.Any())
         {
             var toolSimilarity = (double)commonTools.Count / Math.Max(targetTools.Count, candidateTools.Count);
@@ -506,7 +506,7 @@ public class EnhancedSearchService : IEnhancedSearchService
         var targetModels = targetConversation.Select(t => t.Model).Distinct().ToList();
         var candidateModels = candidate.ModelsUsed.ToList();
         var commonModels = targetModels.Intersect(candidateModels).ToList();
-        
+
         if (targetModels.Any() && candidateModels.Any())
         {
             var modelSimilarity = (double)commonModels.Count / Math.Max(targetModels.Count, candidateModels.Count);
@@ -525,7 +525,7 @@ public class EnhancedSearchService : IEnhancedSearchService
         var targetKeywords = ExtractKeywords(string.Join(" ", targetConversation.Select(t => t.Prompt + " " + t.Response)));
         var candidateKeywords = ExtractKeywords(candidate.LastPrompt ?? "");
         var commonKeywords = targetKeywords.Intersect(candidateKeywords, StringComparer.OrdinalIgnoreCase).ToList();
-        
+
         if (targetKeywords.Any() && candidateKeywords.Any())
         {
             var keywordSimilarity = (double)commonKeywords.Count / Math.Max(targetKeywords.Count, candidateKeywords.Count);
@@ -542,11 +542,11 @@ public class EnhancedSearchService : IEnhancedSearchService
     private IReadOnlyList<string> ExtractKeywords(string text)
     {
         // Simple keyword extraction (in practice, you'd use more sophisticated NLP)
-        var words = text.Split(new[] { ' ', '\n', '\t', '.', ',', ';', ':', '!', '?' }, 
+        var words = text.Split(new[] { ' ', '\n', '\t', '.', ',', ';', ':', '!', '?' },
             StringSplitOptions.RemoveEmptyEntries);
-        
+
         var stopWords = new HashSet<string> { "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by", "is", "are", "was", "were", "be", "been", "have", "has", "had", "do", "does", "did", "will", "would", "could", "should", "can", "may", "might", "must", "this", "that", "these", "those", "i", "you", "he", "she", "it", "we", "they", "me", "him", "her", "us", "them" };
-        
+
         return words
             .Where(w => w.Length > 3 && !stopWords.Contains(w.ToLowerInvariant()))
             .Take(20)
@@ -613,7 +613,7 @@ public class EnhancedSearchService : IEnhancedSearchService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Basic search fallback also failed");
-            
+
             return new EnhancedSearchResponse
             {
                 Results = Array.Empty<ScoredConversationTurn>(),

@@ -50,7 +50,7 @@ public class EdgeHistoryProvider : IBrowserHistoryProvider
             {
                 var profileName = Path.GetFileName(profileDir);
                 var displayName = await GetProfileDisplayNameAsync(profileDir, cancellationToken) ?? profileName;
-                
+
                 var profile = await CreateBrowserProfileAsync(profileDir, profileName, displayName, false, cancellationToken);
                 if (profile != null)
                     profiles.Add(profile);
@@ -101,13 +101,13 @@ public class EdgeHistoryProvider : IBrowserHistoryProvider
                     WHERE u.hidden = 0";
 
                 var parameters = new List<SqliteParameter>();
-                
+
                 if (since.HasValue)
                 {
                     // Chrome/Edge stores timestamps as microseconds since Windows epoch (1601-01-01)
                     var windowsEpoch = new DateTime(1601, 1, 1, 0, 0, 0, DateTimeKind.Utc);
                     var microsecondsSinceEpoch = (long)((since.Value - windowsEpoch).TotalMicroseconds);
-                    
+
                     query += " AND v.visit_time > @since";
                     parameters.Add(new SqliteParameter("@since", microsecondsSinceEpoch));
                 }
@@ -214,7 +214,7 @@ public class EdgeHistoryProvider : IBrowserHistoryProvider
         try
         {
             var lastAccessed = Directory.GetLastWriteTime(profilePath);
-            
+
             var profile = new BrowserProfile
             {
                 Name = profileName,
@@ -223,7 +223,7 @@ public class EdgeHistoryProvider : IBrowserHistoryProvider
                 IsDefault = isDefault,
                 LastAccessed = lastAccessed
             };
-            
+
             return Task.FromResult<BrowserProfile?>(profile);
         }
         catch (Exception ex)
@@ -243,7 +243,7 @@ public class EdgeHistoryProvider : IBrowserHistoryProvider
 
             var json = await File.ReadAllTextAsync(preferencesPath, cancellationToken);
             using var document = JsonDocument.Parse(json);
-            
+
             if (document.RootElement.TryGetProperty("profile", out var profile) &&
                 profile.TryGetProperty("name", out var name))
             {

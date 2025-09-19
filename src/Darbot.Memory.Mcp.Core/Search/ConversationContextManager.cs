@@ -65,7 +65,7 @@ public class ConversationContextManager : IConversationContextManager
         try
         {
             var context = GetOrCreateContext(userId);
-            
+
             // Create conversation pattern from interaction
             var conversationPattern = new ConversationPattern
             {
@@ -99,7 +99,7 @@ public class ConversationContextManager : IConversationContextManager
 
             _contexts.TryUpdate(userId, updatedContext, context);
 
-            _logger.LogDebug("Recorded conversation interaction for user {UserId}: {ConversationId}", 
+            _logger.LogDebug("Recorded conversation interaction for user {UserId}: {ConversationId}",
                 userId, interaction.ConversationId);
 
             // Update preferences based on interaction
@@ -136,7 +136,7 @@ public class ConversationContextManager : IConversationContextManager
                 .Take(10)
                 .ToList();
 
-            _logger.LogDebug("Generated {Count} personalized suggestions for user {UserId}", 
+            _logger.LogDebug("Generated {Count} personalized suggestions for user {UserId}",
                 topSuggestions.Count, userId);
 
             return topSuggestions;
@@ -161,7 +161,7 @@ public class ConversationContextManager : IConversationContextManager
             var recentConversations = context.ConversationPatterns.Where(p => p.AccessTime >= cutoffDate).ToList();
 
             // Calculate metrics
-            var averageSessionDuration = recentConversations.Any() 
+            var averageSessionDuration = recentConversations.Any()
                 ? recentConversations.Average(c => c.ViewDuration.TotalMinutes)
                 : 0;
 
@@ -192,7 +192,7 @@ public class ConversationContextManager : IConversationContextManager
                 BehaviorMetrics = behaviorMetrics
             };
 
-            _logger.LogInformation("Generated analytics for user {UserId}: {TotalConversations} conversations, {TotalSearches} searches", 
+            _logger.LogInformation("Generated analytics for user {UserId}: {TotalConversations} conversations, {TotalSearches} searches",
                 userId, analytics.TotalConversations, analytics.TotalSearches);
 
             return analytics;
@@ -256,7 +256,7 @@ public class ConversationContextManager : IConversationContextManager
 
         foreach (var topic in topics)
         {
-            var existingInterest = updatedInterests.FirstOrDefault(i => 
+            var existingInterest = updatedInterests.FirstOrDefault(i =>
                 string.Equals(i.Topic, topic, StringComparison.OrdinalIgnoreCase));
 
             if (existingInterest != null)
