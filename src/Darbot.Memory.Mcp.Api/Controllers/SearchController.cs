@@ -47,7 +47,7 @@ public class SearchController : ControllerBase
 
             var response = await _searchService.SearchAsync(requestWithUserId, cancellationToken);
 
-            _logger.LogInformation("Enhanced search completed: {ResultCount} results in {SearchTime}ms", 
+            _logger.LogInformation("Enhanced search completed: {ResultCount} results in {SearchTime}ms",
                 response.Results.Count, response.SearchTime.TotalMilliseconds);
 
             return Ok(response);
@@ -225,7 +225,7 @@ public class SearchController : ControllerBase
             var userId = GetUserId();
             var interactionWithUserId = interaction with { UserId = userId };
 
-            _logger.LogDebug("Recording conversation interaction for user {UserId}: {ConversationId}", 
+            _logger.LogDebug("Recording conversation interaction for user {UserId}: {ConversationId}",
                 userId, interaction.ConversationId);
 
             await _contextManager.RecordConversationInteractionAsync(userId, interactionWithUserId, cancellationToken);

@@ -85,11 +85,11 @@ public class BrowserHistoryTests : IDisposable
 
         // Assert
         Assert.True(result);
-        
+
         // Check that files were created
         var profileDir = Path.Combine(_tempDirectory, "browser-history", "Default");
         Assert.True(Directory.Exists(profileDir));
-        
+
         var currentMonth = DateTime.UtcNow.ToString("yyyy-MM");
         var monthlyFile = Path.Combine(profileDir, $"{currentMonth}.json");
         Assert.True(File.Exists(monthlyFile));

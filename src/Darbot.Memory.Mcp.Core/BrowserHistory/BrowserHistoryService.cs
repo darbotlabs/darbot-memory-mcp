@@ -92,21 +92,21 @@ public class BrowserHistoryService : IBrowserHistoryService
 
                     // Read history from the browser
                     var historyEntries = await _browserProvider.ReadHistoryAsync(profile.Path, since, cancellationToken);
-                    
+
                     if (historyEntries.Any())
                     {
                         // Store the history entries
                         var stored = await _historyStorage.StoreBrowserHistoryAsync(historyEntries, cancellationToken);
-                        
+
                         if (stored)
                         {
                             // Update the last sync time for this profile
                             await _historyStorage.UpdateLastSyncTimeAsync(profile.Path, syncTime, cancellationToken);
-                            
+
                             totalNewEntries += historyEntries.Count;
                             processedProfiles.Add(profile.Name);
-                            
-                            _logger.LogInformation("Successfully synced {Count} entries from profile {ProfileName}", 
+
+                            _logger.LogInformation("Successfully synced {Count} entries from profile {ProfileName}",
                                 historyEntries.Count, profile.Name);
                         }
                         else
@@ -131,9 +131,9 @@ public class BrowserHistoryService : IBrowserHistoryService
             }
 
             var success = processedProfiles.Any() && !errors.Any();
-            var message = success 
+            var message = success
                 ? $"Successfully synced browser history from {processedProfiles.Count} profiles"
-                : errors.Any() 
+                : errors.Any()
                     ? $"Sync completed with {errors.Count} errors"
                     : "No profiles were processed";
 
@@ -151,7 +151,7 @@ public class BrowserHistoryService : IBrowserHistoryService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during browser history sync");
-            
+
             return new BrowserHistorySyncResponse
             {
                 Success = false,

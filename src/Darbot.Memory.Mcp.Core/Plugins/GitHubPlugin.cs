@@ -25,9 +25,9 @@ public class GitHubPlugin : IMemoryPlugin
         {
             // In a real implementation, this would use GitHub API to capture repository data
             var repositories = await SimulateGitHubCaptureAsync(cancellationToken);
-            
+
             var links = repositories.Select(r => r.CloneUrl).ToList();
-            
+
             return new PluginData
             {
                 Type = "GitHub",
@@ -60,7 +60,7 @@ public class GitHubPlugin : IMemoryPlugin
             }
 
             // In a real implementation, this would clone repositories and restore branches
-            _logger.LogInformation("Simulating GitHub restoration for {Count} repositories", 
+            _logger.LogInformation("Simulating GitHub restoration for {Count} repositories",
                 data.Metadata.TryGetValue("Count", out var count) ? count : "unknown");
 
             await Task.Delay(200, cancellationToken); // Simulate restoration work
@@ -76,9 +76,9 @@ public class GitHubPlugin : IMemoryPlugin
     public async Task<bool> ValidateStateAsync(PluginData data, CancellationToken cancellationToken = default)
     {
         await Task.Delay(10, cancellationToken); // Simulate validation
-        
-        return data.Type == "GitHub" && 
-               data.Data != null && 
+
+        return data.Type == "GitHub" &&
+               data.Data != null &&
                data.Metadata.ContainsKey("Count") &&
                data.Links.Any();
     }
@@ -115,7 +115,7 @@ public class GitHubPlugin : IMemoryPlugin
             },
             new()
             {
-                Id = "repo-2", 
+                Id = "repo-2",
                 Name = "darbot-ai-platform",
                 FullName = "darbotlabs/darbot-ai-platform",
                 CloneUrl = "https://github.com/darbotlabs/darbot-ai-platform.git",
