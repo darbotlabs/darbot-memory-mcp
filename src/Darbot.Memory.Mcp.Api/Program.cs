@@ -1,6 +1,10 @@
+using Darbot.Memory.Mcp.Api.Acp;
 using Darbot.Memory.Mcp.Api.Authentication;
+using Darbot.Memory.Mcp.Api.Graph;
+using Darbot.Memory.Mcp.Api.Mcp;
 using Darbot.Memory.Mcp.Core.BrowserHistory;
 using Darbot.Memory.Mcp.Core.Configuration;
+using Darbot.Memory.Mcp.Core.Graph;
 using Darbot.Memory.Mcp.Core.Interfaces;
 using Darbot.Memory.Mcp.Core.Models;
 using Darbot.Memory.Mcp.Core.Services;
@@ -12,24 +16,32 @@ using Microsoft.Extensions.Options;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+var acpStdio = AcpStdioHost.ShouldRun(args);
 
 // Configure Serilog
-builder.Host.UseSerilog((context, configuration) =>
-    configuration.ReadFrom.Configuration(context.Configuration));
+if (acpStdio)
+{
+    AcpStdioHost.ConfigureLogging(builder.Logging);
+}
+else
+{
+    builder.Host.UseSerilog((context, configuration) =>
+        configuration.ReadFrom.Configuration(context.Configuration));
+}
 
 // Add configuration
 builder.Services.Configure<DarbotConfiguration>(
     builder.Configuration.GetSection(DarbotConfiguration.SectionName));
 
 // Add services to the container
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddOpenApi(options =>
 {
-    c.SwaggerDoc("v1", new()
+    options.AddDocumentTransformer((document, context, ct) =>
     {
-        Title = "Darbot Memory MCP API",
-        Version = "v1",
-        Description = "MCP server for persisting conversational audit trails"
+        document.Info.Title = "Darbot Memory MCP API";
+        document.Info.Version = "v1";
+        document.Info.Description = "MCP server for persisting conversational audit trails";
+        return Task.CompletedTask;
     });
 });
 
@@ -123,6 +135,11 @@ builder.Services.AddScoped<ISearchIndexer, SearchIndexer>();
 builder.Services.AddScoped<IEnhancedSearchService, EnhancedSearchService>();
 builder.Services.AddScoped<IConversationContextManager, ConversationContextManager>();
 
+// Knowledge graph memory, stateless MCP and ACP
+builder.Services.AddGraphMemory(builder.Configuration);
+builder.Services.AddDarbotMcpServer(builder.Configuration);
+builder.Services.AddDarbotAcp(builder.Configuration);
+
 // Add controllers
 builder.Services.AddControllers();
 
@@ -136,17 +153,28 @@ if (config.BrowserHistory.Enabled)
 
 var app = builder.Build();
 
+if (acpStdio)
+{
+    await AcpStdioHost.RunAsync(app.Services, Console.OpenStandardInput(), Console.OpenStandardOutput());
+    return;
+}
+
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.MapOpenApi();
+    app.UseSwaggerUI(o => o.SwaggerEndpoint("/openapi/v1.json", "Darbot Memory MCP API v1"));
 }
 
 app.UseCors();
+app.UseWebSockets();
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseSerilogRequestLogging();
+
+app.MapDarbotMcpServer();
+app.MapDarbotAcp();
+app.MapGraphMemory();
 
 // Map controllers for enhanced search API
 app.MapControllers();
@@ -174,7 +202,6 @@ app.MapPost("/v1/messages:batchWrite", async (
         : Results.BadRequest(result);
 })
 .WithName("BatchWriteMessages")
-.WithOpenApi()
 .WithSummary("Batch write conversation messages")
 .WithDescription("Writes multiple conversation turns to storage as Markdown files")
 .RequireAuthorization("DarbotMemoryWriter");
@@ -194,7 +221,6 @@ app.MapPost("/v1/messages:write", async (
         : Results.BadRequest(new { Success = false, Message = "Failed to persist message" });
 })
 .WithName("WriteMessage")
-.WithOpenApi()
 .WithSummary("Write single conversation message")
 .WithDescription("Writes a single conversation turn to storage as a Markdown file")
 .RequireAuthorization("DarbotMemoryWriter");
@@ -214,8 +240,7 @@ app.MapGet("/info", () => new
         Workspace = new[] { "/v1/workspaces:capture", "/v1/workspaces:restore", "/v1/workspaces:list", "/v1/workspaces/{workspaceId}" }
     }
 })
-.WithName("GetInfo")
-.WithOpenApi();
+.WithName("GetInfo");
 
 // Query endpoints
 app.MapPost("/v1/conversations:search", async (
@@ -229,7 +254,6 @@ app.MapPost("/v1/conversations:search", async (
     return Results.Ok(result);
 })
 .WithName("SearchConversations")
-.WithOpenApi()
 .WithSummary("Search conversation turns")
 .WithDescription("Searches conversation turns based on various criteria like text, date range, model, etc.")
 .RequireAuthorization("DarbotMemoryWriter");
@@ -245,7 +269,6 @@ app.MapPost("/v1/conversations:list", async (
     return Results.Ok(result);
 })
 .WithName("ListConversations")
-.WithOpenApi()
 .WithSummary("List conversations")
 .WithDescription("Lists conversations with summary information")
 .RequireAuthorization("DarbotMemoryWriter");
@@ -267,7 +290,6 @@ app.MapGet("/v1/conversations/{conversationId}", async (
     return Results.Ok(new { ConversationId = conversationId, Turns = result });
 })
 .WithName("GetConversation")
-.WithOpenApi()
 .WithSummary("Get conversation")
 .WithDescription("Retrieves all turns for a specific conversation")
 .RequireAuthorization("DarbotMemoryWriter");
@@ -290,7 +312,6 @@ app.MapGet("/v1/conversations/{conversationId}/turns/{turnNumber:int}", async (
     return Results.Ok(result);
 })
 .WithName("GetConversationTurn")
-.WithOpenApi()
 .WithSummary("Get conversation turn")
 .WithDescription("Retrieves a specific conversation turn by ID and turn number")
 .RequireAuthorization("DarbotMemoryWriter");
@@ -312,7 +333,6 @@ if (config.BrowserHistory.Enabled)
             : Results.BadRequest(result);
     })
     .WithName("SyncBrowserHistory")
-    .WithOpenApi()
     .WithSummary("Sync browser history")
     .WithDescription("Syncs browser history from Edge profiles with delta update support")
     .RequireAuthorization("DarbotMemoryWriter");
@@ -328,7 +348,6 @@ if (config.BrowserHistory.Enabled)
         return Results.Ok(result);
     })
     .WithName("SearchBrowserHistory")
-    .WithOpenApi()
     .WithSummary("Search browser history")
     .WithDescription("Searches stored browser history based on various criteria like URL, title, domain, date range, etc.")
     .RequireAuthorization("DarbotMemoryWriter");
@@ -343,7 +362,6 @@ if (config.BrowserHistory.Enabled)
         return Results.Ok(new { Profiles = result });
     })
     .WithName("GetBrowserProfiles")
-    .WithOpenApi()
     .WithSummary("Get browser profiles")
     .WithDescription("Retrieves all available browser profiles for history sync")
     .RequireAuthorization("DarbotMemoryWriter");
@@ -364,7 +382,6 @@ app.MapPost("/v1/workspaces:capture", async (
         : Results.BadRequest(result);
 })
 .WithName("CaptureWorkspace")
-.WithOpenApi()
 .WithSummary("Capture current workspace")
 .WithDescription("Captures the complete current workspace state including browser, applications, and conversations")
 .RequireAuthorization("DarbotMemoryWriter");
@@ -383,7 +400,6 @@ app.MapPost("/v1/workspaces:restore", async (
         : Results.BadRequest(result);
 })
 .WithName("RestoreWorkspace")
-.WithOpenApi()
 .WithSummary("Restore workspace")
 .WithDescription("Restores a previously captured workspace state on the current or new device")
 .RequireAuthorization("DarbotMemoryWriter");
@@ -399,7 +415,6 @@ app.MapPost("/v1/workspaces:list", async (
     return Results.Ok(result);
 })
 .WithName("ListWorkspaces")
-.WithOpenApi()
 .WithSummary("List workspaces")
 .WithDescription("Lists all captured workspaces with filtering and pagination support")
 .RequireAuthorization("DarbotMemoryWriter");
@@ -421,7 +436,6 @@ app.MapGet("/v1/workspaces/{workspaceId}", async (
     return Results.Ok(result);
 })
 .WithName("GetWorkspace")
-.WithOpenApi()
 .WithSummary("Get workspace")
 .WithDescription("Retrieves a specific workspace by ID with full context data")
 .RequireAuthorization("DarbotMemoryWriter");
@@ -440,7 +454,6 @@ app.MapDelete("/v1/workspaces/{workspaceId}", async (
         : Results.NotFound(new { Success = false, Message = $"Workspace {workspaceId} not found or could not be deleted" });
 })
 .WithName("DeleteWorkspace")
-.WithOpenApi()
 .WithSummary("Delete workspace")
 .WithDescription("Permanently deletes a workspace and all its associated data")
 .RequireAuthorization("DarbotMemoryWriter");

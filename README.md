@@ -32,6 +32,8 @@ Built for production environments, it offers pluggable storage backends, compreh
 2. [Quick Start](#quick-start)
 3. [Configuration](#configuration)
 4. [API Endpoints](#api-endpoints)
+   - [Knowledge Graph Memory Schemas](#knowledge-graph-memory-schemas)
+   - [Stateless MCP and ACP](#protocols-stateless-mcp-and-agent-client-protocol)
 5. [Storage Providers](#storage-providers)
 6. [Deployment](#deployment)
 7. [Development](#development)
@@ -286,6 +288,61 @@ Features:
 
 ---
 
+## 🕸️ Knowledge Graph Memory Schemas
+
+Memory is also available as a canonical knowledge graph (`nodes`, `edges`, `clusters`) that can be imported from and exported to the schemas used by popular agent-memory systems. Graphs are persisted under `Darbot:Graph:RootPath` (default `./data/graphs`).
+
+| Schema id | Aliases | Import | Export | Notes |
+|---|---|---|---|---|
+| `darbot-kg` | `darbot`, `native`, `canonical` | yes | yes | Lossless native JSON |
+| `3dkg` | `3d-kg` | yes | yes | 3DKG `graphSnapshot`, triples, schema path patterns |
+| `kgforge` | `nexus-forge`, `forge` | yes | yes | Nexus Forge JSON-LD resources |
+| `obsidian` | `obsidian-vault`, `vault` | yes | yes | Notes with frontmatter, `[[wikilinks]]`, `.canvas` |
+| `supermemory` | `super-memory` | yes | yes | Documents, memories, versioned relations |
+| `mcp-memory` | `anthropic-memory`, `mcp` | yes | yes | Reference MCP memory server entities and relations (JSONL) |
+| `mem0` | | yes | yes | Memories plus graph-memory relations |
+| `graphiti` | `zep` | yes | yes | Temporal edges (`valid_at`, `invalid_at`), episodes |
+| `letta` | `memgpt` | yes | yes | Core memory blocks and archival passages |
+| `jsonld` | `json-ld`, `schema.org` | yes | yes | schema.org JSON-LD |
+| `graphml` | | yes | yes | GraphML XML |
+| `cypher` | `neo4j` | no | yes | Neo4j Cypher statements |
+| `ntriples` | `rdf`, `nt` | no | yes | RDF N-Triples |
+
+```bash
+# List schemas
+curl http://localhost:5093/v1/graph-schemas
+# Import an Obsidian vault (JSON object of path -> content) into graph "notes"
+curl -X POST "http://localhost:5093/v1/graphs/notes/import?schema=obsidian" --data-binary @vault.json
+# Export the same graph as Neo4j Cypher
+curl "http://localhost:5093/v1/graphs/notes/export?schema=cypher"
+```
+
+Other graph endpoints: `GET /v1/graphs`, `GET|DELETE /v1/graphs/{name}`, `POST /v1/graphs/{name}:search`, `POST /v1/graphs/{name}/nodes:remember`, `POST /v1/graphs/{name}/edges:relate`, `GET /v1/graphs/{name}/nodes/{id}/neighborhood`, `DELETE /v1/graphs/{name}/nodes/{id}`.
+
+---
+
+## 🔗 Protocols: Stateless MCP and Agent Client Protocol
+
+### Stateless MCP (Streamable HTTP)
+
+`POST /mcp` speaks the Model Context Protocol over Streamable HTTP in **stateless mode**: no `Mcp-Session-Id`, every request is self-contained, so it scales behind load balancers and serverless hosts. It is built on the official `ModelContextProtocol.AspNetCore` SDK and protected by the `DarbotMemoryWriter` policy (`Darbot:Mcp:RequireAuthorization`).
+
+- **Tools:** `memory_write_turn`, `memory_search_conversations`, `memory_list_conversations`, `memory_get_conversation`, `memory_get_turn`, `workspace_capture|list|get|restore|delete`, `graph_list|schemas|remember|relate|search|neighborhood|forget|import|export`, `browser_history_search`
+- **Resources:** `darbot://graph-schemas`, `darbot://graphs/{name}`, `darbot://conversations/{id}`
+- **Prompts:** `recall_context`, `summarize_conversation`, `import_from_schema`
+
+### Agent Client Protocol (ACP)
+
+Darbot Memory is also an [ACP](https://agentclientprotocol.com) agent (protocol v1, JSON-RPC 2.0) so editors such as Zed can use it directly.
+
+- **stdio:** `dotnet run --no-launch-profile --project src/Darbot.Memory.Mcp.Api -- --acp` (logs go to stderr; stdout carries only protocol messages)
+- **WebSocket:** `ws://localhost:5093/acp` (`GET /acp/info` describes capabilities)
+- **Slash commands:** `/remember`, `/recall`, `/forget`, `/relate`, `/graph`, `/schemas`, `/import`, `/export`, `/workspace`, `/help`. Destructive operations ask the client for permission first.
+- **Extension methods:** `_darbot/graph/import|export|list|search`
+
+Settings live under `Darbot:Mcp` and `Darbot:Acp` in `appsettings.json`.
+
+---
 ## 🚀 Deployment
 
 ### Azure Container Apps

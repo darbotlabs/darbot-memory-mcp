@@ -14,6 +14,7 @@ public class DarbotConfiguration
     public AuthConfiguration Auth { get; set; } = new();
     public DiagnosticsConfiguration Diagnostics { get; set; } = new();
     public BrowserHistoryConfiguration BrowserHistory { get; set; } = new();
+    public Darbot.Memory.Mcp.Core.Graph.GraphMemoryConfiguration Graph { get; set; } = new();
 }
 
 /// <summary>
