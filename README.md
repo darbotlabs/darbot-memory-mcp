@@ -5,7 +5,7 @@
 [![CI](https://img.shields.io/github/actions/workflow/status/darbotlabs/darbot-memory-mcp/ci.yml)](../../actions)
 [![Container Image](https://img.shields.io/badge/container-ghcr.io%2Fdarbotlabs%2Fdarbot--memory--mcp-blue)](https://github.com/orgs/darbotlabs/packages?repo_name=darbot-memory-mcp)
 [![License](https://img.shields.io/github/license/darbotlabs/darbot-memory-mcp)](LICENSE)
-[![.NET](https://img.shields.io/badge/.NET-8.0-blue)](https://dotnet.microsoft.com/download/dotnet/8.0)
+[![.NET](https://img.shields.io/badge/.NET-10.0-blue)](https://dotnet.microsoft.com/download/dotnet/10.0)
 
 Darbot Memory MCP is a **Model Context Protocol (MCP) server** that provides enterprise-grade conversational memory persistence. It captures every conversational turn—prompts, model responses, tool usage, and metadata—into tamper-evident Markdown files with cryptographic integrity verification.
 
@@ -70,7 +70,7 @@ Storage Providers:
 
 ### Prerequisites
 
-- .NET 8.0 SDK
+- .NET 10.0 SDK
 - Docker (optional)
 
 ### 1. Run with Docker
@@ -144,12 +144,29 @@ export DARBOT__STORAGE__AZUREBLOB__CONTAINERNAME=conversations
     "Auth": {
       "Mode": "None"
     },
+    "Mcp": {
+      "MaxConcurrentClients": 10,
+      "ConnectionTimeout": "00:01:00",
+      "KeepAliveInterval": "00:00:30"
+    },
     "BrowserHistory": {
       "Enabled": false
+    }
+  },
+  "Kestrel": {
+    "Endpoints": {
+      "Http": { "Url": "http://localhost:5093" }
+    },
+    "Limits": {
+      "MaxConcurrentConnections": 100,
+      "KeepAliveTimeout": "00:02:00",
+      "RequestHeadersTimeout": "00:00:30"
     }
   }
 }
 ```
+
+The `Kestrel` section controls the listening port (default `5093`) and connection limits; `Darbot:Mcp` limits concurrent MCP clients and connection timeouts.
 
 ---
 

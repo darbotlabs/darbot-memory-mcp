@@ -187,6 +187,7 @@ public class AzureBlobStorageProvider : IStorageProvider
 
             await foreach (var blobItem in _containerClient.GetBlobsAsync(
                 traits: BlobTraits.Metadata | BlobTraits.Tags,
+                states: BlobStates.None,
                 prefix: null,
                 cancellationToken: cancellationToken))
             {
@@ -246,6 +247,7 @@ public class AzureBlobStorageProvider : IStorageProvider
 
             await foreach (var blobItem in _containerClient.GetBlobsAsync(
                 traits: BlobTraits.Metadata | BlobTraits.Tags,
+                states: BlobStates.None,
                 prefix: null,
                 cancellationToken: cancellationToken))
             {
@@ -316,6 +318,7 @@ public class AzureBlobStorageProvider : IStorageProvider
         {
             await foreach (var blobItem in _containerClient.GetBlobsAsync(
                 traits: BlobTraits.Metadata,
+                states: BlobStates.None,
                 prefix: null,
                 cancellationToken: cancellationToken))
             {
@@ -349,6 +352,7 @@ public class AzureBlobStorageProvider : IStorageProvider
 
             await foreach (var blobItem in _containerClient.GetBlobsAsync(
                 traits: BlobTraits.Metadata,
+                states: BlobStates.None,
                 prefix: null,
                 cancellationToken: cancellationToken))
             {

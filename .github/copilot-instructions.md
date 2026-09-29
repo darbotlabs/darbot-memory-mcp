@@ -154,7 +154,7 @@ The `nbgv` tool fails in shallow clones with "Shallow clone lacks the objects re
 
 ### CI/CD Pipeline Compatibility
 The project uses GitHub Actions with:
-- .NET 8.0 SDK requirement
+- .NET 10.0 SDK requirement
 - PowerShell 7.x for scripts
 - Docker support via included Dockerfile
 - Code formatting checks with `dotnet format --verify-no-changes`
@@ -163,7 +163,7 @@ The project uses GitHub Actions with:
 ## Dependencies and Tools
 
 ### Required Tools
-- .NET 8.0 SDK (minimum requirement)
+- .NET 10.0 SDK (minimum requirement)
 - PowerShell 7.x (for scripts)
 - Git (for version control and GitVersioning)
 

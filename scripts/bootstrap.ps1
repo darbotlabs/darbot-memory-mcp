@@ -23,12 +23,12 @@ Write-Verbose "Checking prerequisites..."
 
 $dotnetVersion = dotnet --version 2>$null
 if (-not $dotnetVersion) {
-    Write-Error ".NET SDK not found. Please install .NET 8.0 SDK."
+    Write-Error ".NET SDK not found. Please install .NET 10.0 SDK."
     exit 1
 }
 
-if (-not $dotnetVersion.StartsWith("8.")) {
-    Write-Warning ".NET version $dotnetVersion found. .NET 8.0 is recommended."
+if (-not $dotnetVersion.StartsWith("10.")) {
+    Write-Warning ".NET version $dotnetVersion found. .NET 10.0 is recommended."
 }
 
 Write-Host "✓ .NET SDK $dotnetVersion found" -ForegroundColor Green
